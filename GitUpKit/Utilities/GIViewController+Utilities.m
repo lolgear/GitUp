@@ -23,7 +23,9 @@
 #import "GCCore.h"
 #import "GCRepository+Index.h"
 #import "GCRepository+Utilities.h"
+#import "GCHistory.h"
 #import "GIAppKit.h"
+#import "GICommitListViewController.h"
 #import "XLFacilityMacros.h"
 
 #define kOpenDiffPath @"/usr/bin/opendiff"
@@ -62,6 +64,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
   }
 }
 
+#pragma mark - Stage
 - (void)discardAllFiles {
   [self confirmUserActionWithAlertType:kGIAlertType_Stop
                                  title:NSLocalizedString(@"Are you sure you want to discard changes in all working directory files?", nil)
@@ -96,6 +99,35 @@ static NSString* _diffTemporaryDirectoryPath = nil;
   }
 }
 
+#pragma mark - Selection
+- (NSArray <GCCommit *>*)selectedCommitsForFilesMatchingPaths:(NSArray <NSString *>*)paths error:(NSError *__autoreleasing*)error {
+  if (paths.count == 0) {
+    return @[];
+  }
+//  GCHistory *history = [self.repository loadHistoryUsingSorting:kGCHistorySorting_ReverseChronological error:error];
+  NSArray *commits = [self.repository lookupCommitsForFile:paths.firstObject followRenames:YES error:error];
+  if (error && *error) {
+    return @[];
+  }
+  return commits;
+}
+
+- (void)getSelectedCommitsForFilesMatchingPaths:(NSArray <NSString *>*)paths result:(void(^)(NSArray *commits))result {
+  if (result == nil) {
+    return;
+  }
+  
+  NSError *error = nil;
+  NSArray <GCCommit *>* commits = [self selectedCommitsForFilesMatchingPaths:paths error:&error];
+  if (error != nil) {
+    [self presentError:error];
+  }
+  else {
+    result(commits);
+  }
+}
+
+#pragma mark - Submodule
 - (void)stageSubmoduleAtPath:(NSString*)path {
   NSError* error;
   GCSubmodule* submodule = [self.repository lookupSubmoduleWithName:path error:&error];
@@ -135,6 +167,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
                                  }];
 }
 
+#pragma mark - Stage selected changes
 - (void)stageAllChangesForFile:(NSString*)path {
   NSError* error;
   BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:[self.repository absolutePathForFile:path] followLastSymlink:NO];
@@ -256,6 +289,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
                                  }];
 }
 
+#pragma mark - Delete/Restore
 - (void)deleteUntrackedFile:(NSString*)path {
   [self confirmUserActionWithAlertType:kGIAlertType_Stop
                                  title:[NSString stringWithFormat:NSLocalizedString(@"Are you sure you want to delete the file \"%@\"?", nil), path.lastPathComponent]
@@ -287,6 +321,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
                                  }];
 }
 
+#pragma mark - Open/Show
 - (void)openFileWithDefaultEditor:(NSString*)path {
   [[NSWorkspace sharedWorkspace] openFile:[self.repository absolutePathForFile:path]];  // This will silently fail if the file doesn't exist in the working directory
 }
@@ -318,6 +353,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
   }
 }
 
+#pragma mark - Custom apps support
 - (void)_runTaskWithPath:(NSString*)path arguments:(NSArray*)arguments variables:(NSDictionary*)variables waitUntilExit:(BOOL)wait reportErrors:(BOOL)report {
   NSMutableDictionary* environment = [[NSMutableDictionary alloc] initWithDictionary:[[NSProcessInfo processInfo] environment]];
   [environment addEntriesFromDictionary:variables];
@@ -597,6 +633,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
   }
 }
 
+#pragma mark - Conflicts
 - (void)markConflictAsResolved:(GCIndexConflict*)conflict {
   NSError* error;
   if ([self.repository resolveConflictAtPath:conflict.path error:&error]) {
@@ -676,6 +713,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
   return commit;
 }
 
+#pragma mark - Contextual menu
 // Keep logic in sync with method below!
 - (NSMenu*)contextualMenuForDelta:(GCDiffDelta*)delta withConflict:(GCIndexConflict*)conflict allowOpen:(BOOL)allowOpen {
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@""];
@@ -724,6 +762,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
   return menu;
 }
 
+#pragma mark - Keyboard events
 // Keep logic in sync with method above!
 - (BOOL)handleKeyDownEvent:(NSEvent*)event forSelectedDeltas:(NSArray*)deltas withConflicts:(NSDictionary*)conflicts allowOpen:(BOOL)allowOpen {
   if (deltas.count) {
@@ -772,6 +811,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
   return NO;
 }
 
+#pragma mark - Diff tool
 // TODO: Use private app directory
 - (void)launchDiffToolWithCommit:(GCCommit*)commit otherCommit:(GCCommit*)otherCommit {
   NSString* identifier = [[NSUserDefaults standardUserDefaults] stringForKey:GIViewController_DiffTool];
