@@ -16,7 +16,12 @@
 #import "GIViewController.h"
 
 @class GCHistoryCommit;
+@class GCCommit;
+@protocol GIQuickViewController__Delegate__Intentions
+- (void)quickViewWantsToShowSelectedCommitsList:(NSArray <GCCommit *> *)commitsList;
+@end
 
 @interface GIQuickViewController : GIViewController
 @property(nonatomic, strong) GCHistoryCommit* commit;
+@property(weak, nonatomic, readwrite) id<GIQuickViewController__Delegate__Intentions> delegate;
 @end

@@ -218,6 +218,17 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
   } else {
     [menu addItemWithTitle:NSLocalizedString(@"Restore File to This Version…", nil) block:NULL];
   }
+  
+  if (GC_FILE_MODE_IS_FILE(delta.newFile.mode)) {
+    [menu addItemWithTitle:NSLocalizedString(@"Show file history...", nil) block:^{
+      // git log
+      // show selected files history.
+      __auto_type __weak weakSelf = self;
+      [self getSelectedCommitsForFilesMatchingPaths:@[delta.canonicalPath] result:^(NSArray *commits) {
+        [weakSelf.delegate quickViewWantsToShowSelectedCommitsList:commits];
+      }];
+    }];
+  }
 
   return menu;
 }
