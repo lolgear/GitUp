@@ -48,7 +48,7 @@
 
 #define kMaxProgressRefreshRate 10.0  // Hz
 
-@interface Document () <NSToolbarDelegate, NSTextFieldDelegate, GCLiveRepositoryDelegate, GIWindowControllerDelegate, GIMapViewControllerDelegate, GISnapshotListViewControllerDelegate, GIUnifiedReflogViewControllerDelegate, GICommitListViewControllerDelegate, GICommitRewriterViewControllerDelegate, GICommitSplitterViewControllerDelegate, GIConflictResolverViewControllerDelegate>
+@interface Document () <NSToolbarDelegate, NSTextFieldDelegate, GCLiveRepositoryDelegate, GIWindowControllerDelegate, GIMapViewControllerDelegate, GISnapshotListViewControllerDelegate, GIUnifiedReflogViewControllerDelegate, GIQuickViewController__Delegate__Intentions, GICommitListViewControllerDelegate, GICommitRewriterViewControllerDelegate, GICommitSplitterViewControllerDelegate, GIConflictResolverViewControllerDelegate>
 @end
 
 static NSDictionary* _helpPlist = nil;
@@ -1477,6 +1477,11 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 
 - (void)unifiedReflogViewController:(GIUnifiedReflogViewController*)controller didRestoreReflogEntry:(GCReflogEntry*)entry {
   [self toggleReflog:nil];
+}
+
+#pragma mark - GIQuickViewController__Delegate__Intentions
+- (void)quickViewWantsToShowSelectedCommitsList:(NSArray <GCCommit *> *)commitsList {
+  [self _enterQuickViewWithHistoryCommit:nil commitList:commitsList];
 }
 
 #pragma mark - GICommitListViewControllerDelegate
