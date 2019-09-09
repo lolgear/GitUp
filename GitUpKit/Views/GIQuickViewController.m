@@ -223,9 +223,14 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
     [menu addItemWithTitle:NSLocalizedString(@"Show file history...", nil) block:^{
       // git log
       // show selected files history.
-      __auto_type __weak weakSelf = self;
+      __weak typeof(self) weakSelf = self;
       [self getSelectedCommitsForFilesMatchingPaths:@[delta.canonicalPath] result:^(NSArray *commits) {
-        [weakSelf.delegate quickViewWantsToShowSelectedCommitsList:commits];
+        NSMutableArray *result = [NSMutableArray new];
+        for (GCCommit *commit in commits) {
+          GCHistoryCommit *historyCommit = [weakSelf.repository.history historyCommitForCommit:commit];
+          [result addObject:historyCommit];
+        }
+        [weakSelf.delegate quickViewWantsToShowSelectedCommitsList:[result copy]];
       }];
     }];
   }
