@@ -1480,9 +1480,26 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
   [self toggleReflog:nil];
 }
 
+//#import "GICommitListViewController.h"
 #pragma mark - GIQuickViewController__Delegate__Intentions
 - (void)quickViewWantsToShowSelectedCommitsList:(NSArray <GCHistoryCommit *> *)commitsList {
-  [self _enterQuickViewWithHistoryCommit:commitsList.firstObject commitList:commitsList];
+  //[self _enterQuickViewWithHistoryCommit:commitsList.firstObject commitList:commitsList];
+  static GICommitListViewController *theViewController = nil;
+  if (theViewController != nil) {
+    [_windowController.contentViewController dismissViewController:theViewController];
+  }
+  GICommitListViewController *viewController = [[GICommitListViewController alloc] init];
+  viewController.results = commitsList;
+  viewController.selectedCommit = commitsList.firstObject;
+  theViewController = viewController;
+  _searchResultsViewController.results = commitsList;
+  _searchResultsViewController.selectedResult = commitsList.firstObject;
+  
+  if (_searchView.superview == nil) {
+    [self _addSideView:_searchView withIdentifier:kSideViewIdentifier_Search completion:NULL];
+  }
+//  [_mainWindow makeFirstResponder:theViewController.preferredFirstResponder];
+//  [_windowController.contentViewController presentViewControllerAsSheet:theViewController];
 }
 
 #pragma mark - GICommitListViewControllerDelegate
