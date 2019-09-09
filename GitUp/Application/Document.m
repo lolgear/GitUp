@@ -326,6 +326,7 @@ static void _CheckTimerCallBack(CFRunLoopTimerRef timer, void* info) {
   [_searchControllerView replaceWithView:_searchResultsViewController.view];
 
   _quickViewController = [[GIQuickViewController alloc] initWithRepository:_repository];
+  _quickViewController.delegate = self;
   NSTabViewItem* quickItem = [_mainTabView tabViewItemAtIndex:[_mainTabView indexOfTabViewItemWithIdentifier:kWindowModeString_Map_QuickView]];
   quickItem.view = _quickViewController.view;
 
@@ -1480,8 +1481,8 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 }
 
 #pragma mark - GIQuickViewController__Delegate__Intentions
-- (void)quickViewWantsToShowSelectedCommitsList:(NSArray <GCCommit *> *)commitsList {
-  [self _enterQuickViewWithHistoryCommit:nil commitList:commitsList];
+- (void)quickViewWantsToShowSelectedCommitsList:(NSArray <GCHistoryCommit *> *)commitsList {
+  [self _enterQuickViewWithHistoryCommit:commitsList.firstObject commitList:commitsList];
 }
 
 #pragma mark - GICommitListViewControllerDelegate
