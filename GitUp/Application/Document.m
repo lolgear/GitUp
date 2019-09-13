@@ -325,7 +325,7 @@ static void _CheckTimerCallBack(CFRunLoopTimerRef timer, void* info) {
   _searchResultsViewController.emptyLabel = NSLocalizedString(@"No Results", nil);
   [_searchControllerView replaceWithView:_searchResultsViewController.view];
 
-  _quickViewController = [[GIQuickViewController alloc] initWithRepository:_repository];
+  _quickViewController = [[GIQuickViewControllerWithCommitsList alloc] initWithRepository:_repository];
   _quickViewController.delegate = self;
   NSTabViewItem* quickItem = [_mainTabView tabViewItemAtIndex:[_mainTabView indexOfTabViewItemWithIdentifier:kWindowModeString_Map_QuickView]];
   quickItem.view = _quickViewController.view;
@@ -953,6 +953,7 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
   if (commitList) {
     [_quickViewCommits addObjectsFromArray:commitList];
     _quickViewIndex = [_quickViewCommits indexOfObjectIdenticalTo:commit];
+    _quickViewController.list = _quickViewCommits;
     XLOG_DEBUG_CHECK(_quickViewIndex != NSNotFound);
   } else {
     [_quickViewCommits addObject:commit];
@@ -1483,21 +1484,21 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 //#import "GICommitListViewController.h"
 #pragma mark - GIQuickViewController__Delegate__Intentions
 - (void)quickViewWantsToShowSelectedCommitsList:(NSArray <GCHistoryCommit *> *)commitsList {
-  //[self _enterQuickViewWithHistoryCommit:commitsList.firstObject commitList:commitsList];
-  static GICommitListViewController *theViewController = nil;
-  if (theViewController != nil) {
-    [_windowController.contentViewController dismissViewController:theViewController];
-  }
-  GICommitListViewController *viewController = [[GICommitListViewController alloc] init];
-  viewController.results = commitsList;
-  viewController.selectedCommit = commitsList.firstObject;
-  theViewController = viewController;
-  _searchResultsViewController.results = commitsList;
-  _searchResultsViewController.selectedResult = commitsList.firstObject;
-  
-  if (_searchView.superview == nil) {
-    [self _addSideView:_searchView withIdentifier:kSideViewIdentifier_Search completion:NULL];
-  }
+  [self _enterQuickViewWithHistoryCommit:commitsList.firstObject commitList:commitsList];
+//  static GICommitListViewController *theViewController = nil;
+//  if (theViewController != nil) {
+//    [_windowController.contentViewController dismissViewController:theViewController];
+//  }
+//  GICommitListViewController *viewController = [[GICommitListViewController alloc] init];
+//  viewController.results = commitsList;
+//  viewController.selectedCommit = commitsList.firstObject;
+//  theViewController = viewController;
+//  _searchResultsViewController.results = commitsList;
+//  _searchResultsViewController.selectedResult = commitsList.firstObject;
+//
+//  if (_searchView.superview == nil) {
+//    [self _addSideView:_searchView withIdentifier:kSideViewIdentifier_Search completion:NULL];
+//  }
 //  [_mainWindow makeFirstResponder:theViewController.preferredFirstResponder];
 //  [_windowController.contentViewController presentViewControllerAsSheet:theViewController];
 }
