@@ -251,3 +251,94 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 }
 
 @end
+
+#import "GICommitListViewController.h"
+@interface GIQuickViewControllerWithCommitsList ()
+@property (strong, nonatomic, readonly) GICommitListViewController *leftController;
+@property (strong, nonatomic, readonly) GIQuickViewController *rightController;
+@end
+
+@implementation GIQuickViewControllerWithCommitsList
+
+- (GICommitListViewController *)leftController {
+  return self.childViewControllers.firstObject;
+}
+
+- (GIQuickViewController *)rightController {
+  return self.childViewControllers.lastObject;
+}
+
+- (void)addConstraints {
+  if (@available(macOS 10.11, *)) {
+    NSView *leftView = self.leftController.view;
+    if (leftView.superview != nil) {
+      NSArray *constraints = @[
+                               [leftView.leftAnchor constraintEqualToAnchor:leftView.superview.leftAnchor],
+                               [leftView.topAnchor constraintEqualToAnchor:leftView.superview.topAnchor],
+                               [leftView.bottomAnchor constraintEqualToAnchor:leftView.superview.bottomAnchor],
+                               [leftView.widthAnchor constraintEqualToAnchor:leftView.superview.widthAnchor multiplier:0.3],
+                               ];
+      [NSLayoutConstraint activateConstraints:constraints];
+    }
+
+    NSView *rightView = self.rightController.view;
+    if (rightView.superview != nil) {
+      NSArray *constraints = @[
+                               [rightView.leftAnchor constraintEqualToAnchor:leftView.rightAnchor],
+                               [rightView.topAnchor constraintEqualToAnchor:rightView.superview.topAnchor],
+                               [rightView.bottomAnchor constraintEqualToAnchor:rightView.superview.bottomAnchor],
+                               [rightView.rightAnchor constraintEqualToAnchor:rightView.superview.rightAnchor],
+                               ];
+      [NSLayoutConstraint activateConstraints:constraints];
+    }
+  } else {
+    // OOPS!
+  }
+}
+
+- (void)loadView {
+  self.view = [[GIView alloc] initWithFrame:NSScreen.mainScreen.frame];
+//  self.view.translatesAutoresizingMaskIntoConstraints = NO;
+}
+
+- (void)viewDidLoad {
+  [super viewDidLoad];
+  NSViewController *leftController = ({
+    GICommitListViewController *commitsList = [[GICommitListViewController alloc] initWithRepository:self.repository];
+    // setup?
+    commitsList;
+  });
+  NSViewController *rightController = ({
+    GIQuickViewController *quickView = [[GIQuickViewController alloc] initWithRepository:self.repository];
+    // setup?
+    quickView;
+  });
+
+  [self addChildViewController:leftController];
+  [self addChildViewController:rightController];
+  [self.view addSubview:leftController.view];
+  [self.view addSubview:rightController.view];
+  
+  leftController.view.translatesAutoresizingMaskIntoConstraints = NO;
+  rightController.view.translatesAutoresizingMaskIntoConstraints = NO;
+  [self addConstraints];
+}
+
+- (void)setCommit:(GCHistoryCommit *)commit {
+  self.rightController.commit = commit;
+  if (commit != nil && self.leftController.results.count <= 1) {
+    self.leftController.results = @[commit];
+  }
+  _commit;
+}
+
+- (void)setDelegate:(id<GIQuickViewController__Delegate__Intentions>)delegate {
+  self.rightController.delegate = delegate;
+  _delegate;
+}
+
+- (void)setList:(NSArray<GCHistoryCommit *> *)list {
+  self.leftController.results = list;
+  _list;
+}
+@end

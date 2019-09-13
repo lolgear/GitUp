@@ -24,4 +24,11 @@
 @interface GIQuickViewController : GIViewController
 @property(nonatomic, strong) GCHistoryCommit* commit;
 @property(weak, nonatomic, readwrite) id<GIQuickViewController__Delegate__Intentions> delegate;
+@property(nonatomic, strong) NSArray <GCHistoryCommit *> *list;
+@end
+
+@interface GIQuickViewControllerWithCommitsList : GIViewController
+@property(nonatomic, strong) GCHistoryCommit* commit;
+@property(weak, nonatomic, readwrite) id<GIQuickViewController__Delegate__Intentions> delegate;
+@property(nonatomic, strong) NSArray <GCHistoryCommit *> *list;
 @end
