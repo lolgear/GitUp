@@ -253,12 +253,18 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 @end
 
 #import "GICommitListViewController.h"
-@interface GIQuickViewControllerWithCommitsList ()
+@interface GIQuickViewControllerWithCommitsList () <GICommitListViewControllerDelegate>
 @property (strong, nonatomic, readonly) GICommitListViewController *leftController;
 @property (strong, nonatomic, readonly) GIQuickViewController *rightController;
+
+@property (weak, nonatomic, readwrite) NSLayoutConstraint *hiddenConstraint;
+@property (weak, nonatomic, readwrite) NSLayoutConstraint *revealedConstraint;
 @end
 
 @implementation GIQuickViewControllerWithCommitsList
+@synthesize commit = _commit;
+@synthesize delegate = _delegate;
+@synthesize list = _list;
 
 - (GICommitListViewController *)leftController {
   return self.childViewControllers.firstObject;
@@ -266,6 +272,13 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 
 - (GIQuickViewController *)rightController {
   return self.childViewControllers.lastObject;
+}
+
+- (void)toggleLeftView {
+//  BOOL shouldReveal = self.leftController.results.count > 0;
+  self.revealedConstraint.active = YES;
+//  self.hiddenConstraint.active = !shouldReveal;
+//  [self.view layoutSubtreeIfNeeded];
 }
 
 - (void)addConstraints {
@@ -276,21 +289,24 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
                                [leftView.leftAnchor constraintEqualToAnchor:leftView.superview.leftAnchor],
                                [leftView.topAnchor constraintEqualToAnchor:leftView.superview.topAnchor],
                                [leftView.bottomAnchor constraintEqualToAnchor:leftView.superview.bottomAnchor],
-                               [leftView.widthAnchor constraintEqualToAnchor:leftView.superview.widthAnchor multiplier:0.3],
+                               [leftView.widthAnchor constraintEqualToAnchor:leftView.superview.widthAnchor multiplier:0.3]
                                ];
       [NSLayoutConstraint activateConstraints:constraints];
     }
 
     NSView *rightView = self.rightController.view;
     if (rightView.superview != nil) {
+      self.hiddenConstraint = [rightView.leftAnchor constraintEqualToAnchor:leftView.superview.leftAnchor];
+      self.revealedConstraint = [rightView.leftAnchor constraintEqualToAnchor:leftView.rightAnchor];
       NSArray *constraints = @[
-                               [rightView.leftAnchor constraintEqualToAnchor:leftView.rightAnchor],
                                [rightView.topAnchor constraintEqualToAnchor:rightView.superview.topAnchor],
                                [rightView.bottomAnchor constraintEqualToAnchor:rightView.superview.bottomAnchor],
                                [rightView.rightAnchor constraintEqualToAnchor:rightView.superview.rightAnchor],
                                ];
       [NSLayoutConstraint activateConstraints:constraints];
     }
+    
+    [self toggleLeftView];
   } else {
     // OOPS!
   }
@@ -306,6 +322,7 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
   NSViewController *leftController = ({
     GICommitListViewController *commitsList = [[GICommitListViewController alloc] initWithRepository:self.repository];
     // setup?
+    commitsList.delegate = self;
     commitsList;
   });
   NSViewController *rightController = ({
@@ -325,20 +342,25 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 }
 
 - (void)setCommit:(GCHistoryCommit *)commit {
+  _commit = commit;
   self.rightController.commit = commit;
-  if (commit != nil && self.leftController.results.count <= 1) {
-    self.leftController.results = @[commit];
-  }
-  _commit;
+  self.leftController.selectedCommit = commit;
 }
 
 - (void)setDelegate:(id<GIQuickViewController__Delegate__Intentions>)delegate {
+  _delegate = delegate;
   self.rightController.delegate = delegate;
-  _delegate;
 }
 
 - (void)setList:(NSArray<GCHistoryCommit *> *)list {
+  _list = list;
   self.leftController.results = list;
-  _list;
+  [self toggleLeftView];
+}
+
+#pragma mark - CommitListControllerDelegate
+- (void)commitListViewControllerDidChangeSelection:(GICommitListViewController *)controller {
+  // we should reload data in quickview.
+  self.rightController.commit = controller.selectedCommit;
 }
 @end
