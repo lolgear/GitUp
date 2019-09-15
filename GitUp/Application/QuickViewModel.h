@@ -11,11 +11,12 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface QuickViewModel : NSObject
-- (instancetype)configuredWithLiveRepository:(GCLiveRepository *)repository;
+- (instancetype)configuredWithRepository:(GCLiveRepository *)repository;
 
 // Checking
 @property (assign, nonatomic, readonly) BOOL hasPrevious;
 @property (assign, nonatomic, readonly) BOOL hasNext;
+@property (assign, nonatomic, readonly) BOOL hasPaging;
 
 // Moving
 - (void)moveBackward;
@@ -24,6 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
 // States
 - (void)enterWithHistoryCommit:(GCHistoryCommit *)commit commitList:(NSArray *)commitList onResult:(void(^)(GCHistoryCommit *,  NSArray * _Nullable))result;
 - (void)exit;
+@property (strong, nonatomic, readonly) GCHistoryCommit *currentCommit;
 @end
 
 NS_ASSUME_NONNULL_END

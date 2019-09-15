@@ -52,18 +52,33 @@
   return _index > 0;
 }
 
+- (BOOL)hasPaging {
+  return _commits != nil;
+}
+
+// TODO: Rename them appropriately.
+// Blowing mind.
+// Moving backward means moving to the end of array. ( or back to origin )
+// Moving forward means moving to the beginning of array. ( or to recent commits )
+// Also, these checks for end of array should be done __after__ increment or decrement of index.
 #pragma mark - Moving
 - (void)moveBackward {
-  _index -= 1;
+  _index += 1;
+  if (_index == _commits.count - 1) {
+    [self loadMoreAncestors];
+  }
 }
 
 - (void)moveForward {
-  _index += 1;
+  _index -= 1;
+  if (_index == 0) {
+    [self loadMoreDescendants];
+  }
 }
 
 #pragma mark - State
 - (void)enterWithHistoryCommit:(GCHistoryCommit *)commit commitList:(NSArray *)commitList onResult:(void(^)(GCHistoryCommit *,  NSArray * _Nullable))result {
-  [_repository suspendHistoryUpdates];
+  [_repository suspendHistoryUpdates]; // We don't want the the history to change while in QuickView because of the walkers
   
   _commits = [NSMutableArray new];
   if (commitList) {
@@ -96,8 +111,12 @@
   [_repository resumeHistoryUpdates];
 }
 
+- (GCHistoryCommit *)currentCommit {
+  return _commits[_index];
+}
+
 #pragma mark - Configurations
-- (instancetype)configuredWithLiveRepository:(GCLiveRepository *)repository {
+- (instancetype)configuredWithRepository:(GCLiveRepository *)repository {
   _repository = repository;
   return self;
 }
