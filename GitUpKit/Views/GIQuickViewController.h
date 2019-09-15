@@ -19,12 +19,11 @@
 @class GCCommit;
 @protocol GIQuickViewController__Delegate__Intentions
 - (void)quickViewWantsToShowSelectedCommitsList:(NSArray <GCHistoryCommit *> *)commitsList;
+- (void)quickViewDidSelectCommit:(GCHistoryCommit *)commit commitsList:(NSArray <GCHistoryCommit *>*)commitsList;
 @end
 
 @interface GIQuickViewController : GIViewController
 @property(nonatomic, strong) GCHistoryCommit* commit;
-@property(weak, nonatomic, readwrite) id<GIQuickViewController__Delegate__Intentions> delegate;
-@property(nonatomic, strong) NSArray <GCHistoryCommit *> *list;
 @end
 
 @interface GIQuickViewControllerWithCommitsList : GIViewController

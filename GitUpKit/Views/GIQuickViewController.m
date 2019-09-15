@@ -39,6 +39,8 @@
 @property(nonatomic, weak) IBOutlet NSBox* separatorBox;
 @property(nonatomic, weak) IBOutlet GIDualSplitView* mainSplitView;
 @property(nonatomic, weak) IBOutlet GIDualSplitView* infoSplitView;
+
+@property(nonatomic, weak) id <GIQuickViewController__Delegate__Intentions> delegate;
 @end
 
 @implementation GIQuickViewController {
@@ -278,6 +280,12 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 //  BOOL shouldReveal = self.leftController.results.count > 0;
   self.revealedConstraint.active = YES;
 //  self.hiddenConstraint.active = !shouldReveal;
+  // TODO: Add proper animation.
+//  [NSAnimationContext runAnimationGroup:^(NSAnimationContext * _Nonnull context) {
+//    context.duration = 0.25;
+//    context.allowsImplicitAnimation = YES;
+//    [self.view layoutSubtreeIfNeeded];
+//  } completionHandler:nil];
 //  [self.view layoutSubtreeIfNeeded];
 }
 
@@ -296,7 +304,7 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 
     NSView *rightView = self.rightController.view;
     if (rightView.superview != nil) {
-      self.hiddenConstraint = [rightView.leftAnchor constraintEqualToAnchor:leftView.superview.leftAnchor];
+      self.hiddenConstraint = [rightView.leftAnchor constraintEqualToAnchor:rightView.superview.leftAnchor];
       self.revealedConstraint = [rightView.leftAnchor constraintEqualToAnchor:leftView.rightAnchor];
       NSArray *constraints = @[
                                [rightView.topAnchor constraintEqualToAnchor:rightView.superview.topAnchor],
@@ -362,5 +370,8 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 - (void)commitListViewControllerDidChangeSelection:(GICommitListViewController *)controller {
   // we should reload data in quickview.
   self.rightController.commit = controller.selectedCommit;
+  [self.rightController.delegate quickViewDidSelectCommit:self.rightController.commit commitsList:nil];
+  // TODO: add quick view model.
+  // also we should update QuickViewModel to be in touch with toolbar...
 }
 @end
