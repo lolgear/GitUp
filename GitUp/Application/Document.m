@@ -91,7 +91,7 @@ static inline WindowModeID _WindowModeIDFromString(NSString* mode) {
   GIUnifiedReflogViewController* _unifiedReflogViewController;
   GICommitListViewController* _searchResultsViewController;
   GICommitListViewController* _ancestorsViewController;
-  GIQuickViewController* _quickViewController;
+  GIQuickViewControllerWithCommitsList* _quickViewController;
   GIDiffViewController* _diffViewController;
   GICommitRewriterViewController* _commitRewriterViewController;
   GICommitSplitterViewController* _commitSplitterViewController;
@@ -933,10 +933,9 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 - (void)_enterQuickViewWithHistoryCommit:(GCHistoryCommit*)commit commitList:(NSArray*)commitList {
   __weak typeof(self) weakSelf = self;
   [_quickViewModel enterWithHistoryCommit:commit commitList:commitList onResult:^(GCHistoryCommit * _Nonnull theCommit, NSArray * _Nullable theList) {
-    if (commitList) {
-      _quickViewController.list = commitList;
-    }
+    _quickViewController.list = commitList;
     _quickViewController.commit = commit;
+    [weakSelf _updateToolBar];
     [weakSelf _setWindowMode:kWindowModeString_Map_QuickView];
   }];
 }
