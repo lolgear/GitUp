@@ -119,6 +119,21 @@
   return _commits[_index];
 }
 
+- (void)setSelectedCommit:(GCHistoryCommit *)selectedCommit {
+  NSUInteger index = [_commits indexOfObjectIdenticalTo:selectedCommit];
+  if (index == NSNotFound) {
+    // set index to zero.
+    _index = 0;
+  }
+  else {
+    _index = index;
+  }
+}
+
+- (GCHistoryCommit *)selectedCommit {
+  return self.currentCommit;
+}
+
 #pragma mark - Configurations
 - (instancetype)configuredWithRepository:(GCLiveRepository *)repository {
   _repository = repository;

@@ -26,6 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)enterWithHistoryCommit:(GCHistoryCommit *)commit commitList:(NSArray *)commitList onResult:(void(^)(GCHistoryCommit *,  NSArray * _Nullable))result;
 - (void)exit;
 @property (strong, nonatomic, readonly) GCHistoryCommit *currentCommit;
+@property (strong, nonatomic, readwrite) GCHistoryCommit *selectedCommit;
 @end
 
 NS_ASSUME_NONNULL_END
