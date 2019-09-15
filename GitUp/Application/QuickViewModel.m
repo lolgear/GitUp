@@ -78,6 +78,10 @@
 
 #pragma mark - State
 - (void)enterWithHistoryCommit:(GCHistoryCommit *)commit commitList:(NSArray *)commitList onResult:(void(^)(GCHistoryCommit *,  NSArray * _Nullable))result {
+
+  // actually, we need to cleanup state if we reenter this function.
+  [self exit];
+  
   [_repository suspendHistoryUpdates]; // We don't want the the history to change while in QuickView because of the walkers
   
   _commits = [NSMutableArray new];
