@@ -18,6 +18,9 @@
 #import "Common.h"
 #import "AppDelegate.h"
 
+// Move to GitUpKit?
+#import "QuickViewModel.h"
+
 #import <GitUpKit/XLFacilityMacros.h>
 
 #define kWindowModeString_Map @"map"
@@ -101,10 +104,7 @@ static inline WindowModeID _WindowModeIDFromString(NSString* mode) {
   NSDateFormatter* _dateFormatter;
   CALayer* _fixedSnapshotLayer;
   CALayer* _animatingSnapshotLayer;
-  NSMutableArray* _quickViewCommits;
-  GCHistoryWalker* _quickViewAncestors;
-  GCHistoryWalker* _quickViewDescendants;
-  NSUInteger _quickViewIndex;
+  QuickViewModel* _quickViewModel;
   BOOL _searchReady;
   BOOL _preventSelectionLoopback;
   NSResponder* _savedFirstResponder;
@@ -325,6 +325,7 @@ static void _CheckTimerCallBack(CFRunLoopTimerRef timer, void* info) {
   _searchResultsViewController.emptyLabel = NSLocalizedString(@"No Results", nil);
   [_searchControllerView replaceWithView:_searchResultsViewController.view];
 
+  _quickViewModel = [[QuickViewModel new] configuredWithRepository:_repository];
   _quickViewController = [[GIQuickViewControllerWithCommitsList alloc] initWithRepository:_repository];
   _quickViewController.delegate = self;
   NSTabViewItem* quickItem = [_mainTabView tabViewItemAtIndex:[_mainTabView indexOfTabViewItemWithIdentifier:kWindowModeString_Map_QuickView]];
@@ -740,7 +741,7 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 - (void)_updateToolBar {
   if ([_windowMode isEqualToString:kWindowModeString_Map_QuickView] || [_windowMode isEqualToString:kWindowModeString_Map_Diff] || [_windowMode isEqualToString:kWindowModeString_Map_Rewrite] || [_windowMode isEqualToString:kWindowModeString_Map_Split] || [_windowMode isEqualToString:kWindowModeString_Map_Resolve] || [_windowMode isEqualToString:kWindowModeString_Map_Config]) {
     _modeControl.hidden = YES;
-    if (_quickViewCommits) {
+    if (_quickViewModel.hasPaging) {
       _previousButton.hidden = NO;
       _previousButton.enabled = [self validateUserInterfaceItem:(id)_previousButton];
       _nextButton.hidden = NO;
@@ -929,91 +930,48 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 
 #pragma mark - QuickView
 
-- (void)_loadMoreAncestors {
-  if (![_quickViewAncestors iterateWithCommitBlock:^(GCHistoryCommit* commit, BOOL* stop) {
-        [_quickViewCommits addObject:commit];
-      }]) {
-    _quickViewAncestors = nil;
-  }
-}
-
-- (void)_loadMoreDescendants {
-  if (![_quickViewDescendants iterateWithCommitBlock:^(GCHistoryCommit* commit, BOOL* stop) {
-        [_quickViewCommits insertObject:commit atIndex:0];
-        _quickViewIndex += 1;  // We insert commits before the index too!
-      }]) {
-    _quickViewDescendants = nil;
-  }
-}
-
 - (void)_enterQuickViewWithHistoryCommit:(GCHistoryCommit*)commit commitList:(NSArray*)commitList {
-  [_repository suspendHistoryUpdates];  // We don't want the the history to change while in QuickView because of the walkers
-
-  _quickViewCommits = [[NSMutableArray alloc] init];
-  if (commitList) {
-    [_quickViewCommits addObjectsFromArray:commitList];
-    _quickViewIndex = [_quickViewCommits indexOfObjectIdenticalTo:commit];
-    _quickViewController.list = _quickViewCommits;
-    XLOG_DEBUG_CHECK(_quickViewIndex != NSNotFound);
-  } else {
-    [_quickViewCommits addObject:commit];
-    _quickViewIndex = 0;
-    _quickViewAncestors = [_repository.history walkerForAncestorsOfCommits:@[ commit ]];
-    [self _loadMoreAncestors];
-    _quickViewDescendants = [_repository.history walkerForDescendantsOfCommits:@[ commit ]];
-    [self _loadMoreDescendants];
-  }
-
-  _quickViewController.commit = commit;
-
-  [self _setWindowMode:kWindowModeString_Map_QuickView];
+  __weak typeof(self) weakSelf = self;
+  [_quickViewModel enterWithHistoryCommit:commit commitList:commitList onResult:^(GCHistoryCommit * _Nonnull theCommit, NSArray * _Nullable theList) {
+    if (commitList) {
+      _quickViewController.list = commitList;
+    }
+    _quickViewController.commit = commit;
+    [weakSelf _setWindowMode:kWindowModeString_Map_QuickView];
+  }];
 }
 
 - (BOOL)_hasPreviousQuickView {
-  return (_quickViewIndex + 1 < _quickViewCommits.count);
+  return _quickViewModel.hasPrevious;
+}
+
+- (void)_selectQuickViewCommit:(GCHistoryCommit *)commit {
+  _quickViewController.commit = commit;
+  if (_searchView.superview) {
+    _searchResultsViewController.selectedCommit = commit;
+  } else {
+    [_mapViewController selectCommit:commit];
+  }
+  
+  [self _updateToolBar];
 }
 
 - (void)_previousQuickView {
-  _quickViewIndex += 1;
-  GCHistoryCommit* commit = _quickViewCommits[_quickViewIndex];
-  _quickViewController.commit = commit;
-  if (_searchView.superview) {
-    _searchResultsViewController.selectedCommit = commit;
-  } else {
-    [_mapViewController selectCommit:commit];
-  }
-  if (_quickViewIndex == _quickViewCommits.count - 1) {
-    [self _loadMoreAncestors];
-  }
-  [self _updateToolBar];
+  [_quickViewModel moveBackward];
+  [self _selectQuickViewCommit:_quickViewModel.currentCommit];
 }
 
 - (BOOL)_hasNextQuickView {
-  return (_quickViewIndex > 0);
+  return _quickViewModel.hasNext;
 }
 
 - (void)_nextQuickView {
-  _quickViewIndex -= 1;
-  GCHistoryCommit* commit = _quickViewCommits[_quickViewIndex];
-  _quickViewController.commit = commit;
-  if (_searchView.superview) {
-    _searchResultsViewController.selectedCommit = commit;
-  } else {
-    [_mapViewController selectCommit:commit];
-  }
-  if (_quickViewIndex == 0) {
-    [self _loadMoreDescendants];
-  }
-  [self _updateToolBar];
+  [_quickViewModel moveForward];
+  [self _selectQuickViewCommit:_quickViewModel.currentCommit];
 }
 
 - (void)_exitQuickView {
-  _quickViewCommits = nil;
-  _quickViewAncestors = nil;
-  _quickViewDescendants = nil;
-
-  [_repository resumeHistoryUpdates];
-
+  [_quickViewModel exit];
   [self _setWindowMode:kWindowModeString_Map];
 }
 
