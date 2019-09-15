@@ -1460,6 +1460,13 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 //  [_windowController.contentViewController presentViewControllerAsSheet:theViewController];
 }
 
+- (void)quickViewDidSelectCommit:(GCHistoryCommit *)commit commitsList:(NSArray<GCHistoryCommit *> *)commitsList {
+  // update quickViewModel.
+  // and toolbar.
+  _quickViewModel.selectedCommit = commit;
+  [self _selectQuickViewCommit:_quickViewModel.selectedCommit];
+}
+
 #pragma mark - GICommitListViewControllerDelegate
 
 - (void)commitListViewControllerDidChangeSelection:(GICommitListViewController*)controller {
