@@ -106,13 +106,18 @@
   }
 }
 
-- (void)exit {
+- (void)cleanup {
   _commits = nil;
   _ancestors = nil;
   _descendants = nil;
-  
+}
+
+- (void)exit {
+  [self cleanup];
   // resume history updates for repository.
-  [_repository resumeHistoryUpdates];
+  if ([_repository areHistoryUpdatesSuspended]) {
+    [_repository resumeHistoryUpdates];
+  }
 }
 
 - (GCHistoryCommit *)currentCommit {
