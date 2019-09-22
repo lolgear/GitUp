@@ -259,8 +259,8 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 @property (strong, nonatomic, readonly) GICommitListViewController *leftController;
 @property (strong, nonatomic, readonly) GIQuickViewController *rightController;
 
-@property (weak, nonatomic, readwrite) NSLayoutConstraint *hiddenConstraint;
-@property (weak, nonatomic, readwrite) NSLayoutConstraint *revealedConstraint;
+@property (strong, nonatomic, readwrite) NSLayoutConstraint *hiddenConstraint;
+@property (strong, nonatomic, readwrite) NSLayoutConstraint *revealedConstraint;
 @end
 
 @implementation GIQuickViewControllerWithCommitsList
@@ -277,40 +277,42 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 }
 
 - (void)toggleLeftView {
-//  BOOL shouldReveal = self.leftController.results.count > 0;
-  self.revealedConstraint.active = YES;
-//  self.hiddenConstraint.active = !shouldReveal;
-  // TODO: Add proper animation.
-//  [NSAnimationContext runAnimationGroup:^(NSAnimationContext * _Nonnull context) {
-//    context.duration = 0.25;
-//    context.allowsImplicitAnimation = YES;
-//    [self.view layoutSubtreeIfNeeded];
-//  } completionHandler:nil];
-//  [self.view layoutSubtreeIfNeeded];
+  BOOL shouldReveal = self.leftController.results.count > 0;
+  self.revealedConstraint.active = shouldReveal;
+  self.hiddenConstraint.active = !shouldReveal;
+  [self.view setNeedsDisplay:YES];
+  [NSAnimationContext runAnimationGroup:^(NSAnimationContext * _Nonnull context) {
+    context.duration = 0.25;
+    context.allowsImplicitAnimation = YES;
+    [self.view displayIfNeeded];
+  } completionHandler:nil];
 }
 
 - (void)addConstraints {
   if (@available(macOS 10.11, *)) {
     NSView *leftView = self.leftController.view;
     if (leftView.superview != nil) {
+      NSView *superview = leftView.superview;
       NSArray *constraints = @[
-                               [leftView.leftAnchor constraintEqualToAnchor:leftView.superview.leftAnchor],
-                               [leftView.topAnchor constraintEqualToAnchor:leftView.superview.topAnchor],
-                               [leftView.bottomAnchor constraintEqualToAnchor:leftView.superview.bottomAnchor],
-                               [leftView.widthAnchor constraintEqualToAnchor:leftView.superview.widthAnchor multiplier:0.3]
+                               [leftView.leftAnchor constraintEqualToAnchor:superview.leftAnchor],
+                               [leftView.topAnchor constraintEqualToAnchor:superview.topAnchor],
+                               [leftView.bottomAnchor constraintEqualToAnchor:superview.bottomAnchor],
+                               [leftView.widthAnchor constraintEqualToAnchor:superview.widthAnchor multiplier:0.3]
                                ];
       [NSLayoutConstraint activateConstraints:constraints];
     }
 
     NSView *rightView = self.rightController.view;
     if (rightView.superview != nil) {
-      self.hiddenConstraint = [rightView.leftAnchor constraintEqualToAnchor:rightView.superview.leftAnchor];
+      NSView *superview = rightView.superview;
+      self.hiddenConstraint = [rightView.leftAnchor constraintEqualToAnchor:superview.leftAnchor];
       self.revealedConstraint = [rightView.leftAnchor constraintEqualToAnchor:leftView.rightAnchor];
       NSArray *constraints = @[
-                               [rightView.topAnchor constraintEqualToAnchor:rightView.superview.topAnchor],
-                               [rightView.bottomAnchor constraintEqualToAnchor:rightView.superview.bottomAnchor],
-                               [rightView.rightAnchor constraintEqualToAnchor:rightView.superview.rightAnchor],
+                               [rightView.topAnchor constraintEqualToAnchor:superview.topAnchor],
+                               [rightView.bottomAnchor constraintEqualToAnchor:superview.bottomAnchor],
+                               [rightView.rightAnchor constraintEqualToAnchor:superview.rightAnchor],
                                ];
+//      [self.view addConstraints:@[self.hiddenConstraint, self.revealedConstraint]];
       [NSLayoutConstraint activateConstraints:constraints];
     }
     
@@ -322,7 +324,13 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 
 - (void)loadView {
   self.view = [[GIView alloc] initWithFrame:NSScreen.mainScreen.frame];
-//  self.view.translatesAutoresizingMaskIntoConstraints = NO;
+  self.view.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;//NSViewMinXMargin | NSViewMinYMargin | NSViewMaxXMargin | NSViewMaxYMargin | NSViewWidthSizable | NSViewHeightSizable;
+//  self.view.translatesAutoresizingMaskIntoConstraints = YES;
+}
+
+- (void)viewDidLayout {
+  [super viewDidLayout];
+  NSLog(@"\n self: (%@) \n left: (%@) \n right: (%@) \n contentsView: (%@)", NSStringFromRect(self.view.frame), NSStringFromRect(self.leftController.view.frame), NSStringFromRect(self.rightController.view.frame), NSStringFromRect(self.rightController.contentsView.frame));
 }
 
 - (void)viewDidLoad {
