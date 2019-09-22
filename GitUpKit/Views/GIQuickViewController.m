@@ -312,7 +312,6 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
                                [rightView.bottomAnchor constraintEqualToAnchor:superview.bottomAnchor],
                                [rightView.rightAnchor constraintEqualToAnchor:superview.rightAnchor],
                                ];
-//      [self.view addConstraints:@[self.hiddenConstraint, self.revealedConstraint]];
       [NSLayoutConstraint activateConstraints:constraints];
     }
     
@@ -324,8 +323,6 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 
 - (void)loadView {
   self.view = [[GIView alloc] initWithFrame:NSScreen.mainScreen.frame];
-  self.view.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;//NSViewMinXMargin | NSViewMinYMargin | NSViewMaxXMargin | NSViewMaxYMargin | NSViewWidthSizable | NSViewHeightSizable;
-//  self.view.translatesAutoresizingMaskIntoConstraints = YES;
 }
 
 - (void)viewDidLayout {
