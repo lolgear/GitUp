@@ -1234,6 +1234,9 @@ cleanup:
           status = git_tree_entry_bypath(&entry, tree, fileName);
           if (status == GIT_OK) {
             for (unsigned int i = 0, count = git_commit_parentcount(commit); i < count; ++i) {
+              if (commit == NULL) {
+                break;
+              }
               git_commit* parentCommit;
               status = git_commit_parent(&parentCommit, commit, i);
               if (status == GIT_OK) {
@@ -1252,7 +1255,7 @@ cleanup:
                         GCCommit* newCommit = [[GCCommit alloc] initWithRepository:self commit:commit];
                         [commits addObject:newCommit];
                         [newCommit release];
-                        commit = NULL;
+                        commit = NULL; // well, if we are here, we should terminate for-loop (count = git_commit_parentcount(commit))
                         if (delta->status == GIT_DELTA_RENAMED) {
                           free(fileName);
                           fileName = strdup(delta->old_file.path);
@@ -1269,7 +1272,7 @@ cleanup:
                 }
                 git_commit_free(parentCommit);
               }
-            }
+            } // end of for-loop (count = git_commit_parentcount(commit))
             git_tree_entry_free(entry);
           } else if (status == GIT_ENOTFOUND) {
             status = GIT_ITEROVER;
@@ -1285,6 +1288,7 @@ cleanup:
     if (status != GIT_OK) {
       [commits release];
       commits = nil;
+      
     }
     CHECK_LIBGIT2_FUNCTION_CALL(goto cleanup, status, == GIT_OK);
   }
