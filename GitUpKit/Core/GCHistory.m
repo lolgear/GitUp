@@ -1252,10 +1252,13 @@ cleanup:
                     for (size_t i2 = 0, count2 = git_diff_num_deltas(diff); i2 < count2; ++i2) {
                       const git_diff_delta* delta = git_diff_get_delta(diff, i2);
                       if (strcmp(delta->new_file.path, fileName) == 0) {
-                        GCCommit* newCommit = [[GCCommit alloc] initWithRepository:self commit:commit];
+                        // here we need to retain commit.
+                        git_commit *copy_commit;
+                        git_commit_dup(&copy_commit, commit);
+                        GCCommit* newCommit = [[GCCommit alloc] initWithRepository:self commit:copy_commit];
                         [commits addObject:newCommit];
                         [newCommit release];
-                        commit = NULL; // well, if we are here, we should terminate for-loop (count = git_commit_parentcount(commit))
+//                        commit = NULL; // well, if we are here, we should terminate for-loop (count = git_commit_parentcount(commit))
                         if (delta->status == GIT_DELTA_RENAMED) {
                           free(fileName);
                           fileName = strdup(delta->old_file.path);
