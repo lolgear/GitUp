@@ -264,9 +264,9 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 @end
 
 @implementation GIQuickViewControllerWithCommitsList
-@synthesize commit = _commit;
-@synthesize delegate = _delegate;
-@synthesize list = _list;
+@dynamic commit;
+@dynamic delegate;
+@dynamic list;
 
 - (GICommitListViewController *)leftController {
   return self.childViewControllers.firstObject;
@@ -325,11 +325,6 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
   self.view = [[GIView alloc] initWithFrame:NSScreen.mainScreen.frame];
 }
 
-- (void)viewDidLayout {
-  [super viewDidLayout];
-  NSLog(@"\n self: (%@) \n left: (%@) \n right: (%@) \n contentsView: (%@)", NSStringFromRect(self.view.frame), NSStringFromRect(self.leftController.view.frame), NSStringFromRect(self.rightController.view.frame), NSStringFromRect(self.rightController.contentsView.frame));
-}
-
 - (void)viewDidLoad {
   [super viewDidLoad];
   NSViewController *leftController = ({
@@ -355,18 +350,15 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 }
 
 - (void)setCommit:(GCHistoryCommit *)commit {
-  _commit = commit;
   self.rightController.commit = commit;
   self.leftController.selectedCommit = commit;
 }
 
 - (void)setDelegate:(id<GIQuickViewController__Delegate__Intentions>)delegate {
-  _delegate = delegate;
   self.rightController.delegate = delegate;
 }
 
 - (void)setList:(NSArray<GCHistoryCommit *> *)list {
-  _list = list;
   self.leftController.results = list;
   [self toggleLeftView];
 }
