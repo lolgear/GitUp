@@ -1244,8 +1244,6 @@ cleanup:
   commits = [[NSMutableArray alloc] init];
   git_diff_options diffOptions = GIT_DIFF_OPTIONS_INIT;
   diffOptions.flags = GIT_DIFF_SKIP_BINARY_CHECK;  // This should not be needed since not generating patches anyway
-  diffOptions.pathspec.strings = &fileName;
-  diffOptions.pathspec.count = 1;
   git_diff_find_options findOptions = GIT_DIFF_FIND_OPTIONS_INIT;
   findOptions.flags = GIT_DIFF_FIND_RENAMES;
   while (1) {
@@ -1279,7 +1277,7 @@ cleanup:
                 status = git_commit_tree(&parentTree, parentCommit);
                 if (status == GIT_OK) {
                   git_diff* diff = NULL;
-                  status = git_diff_tree_to_tree(&diff, self.private, tree, parentTree, &diffOptions);
+                  status = git_diff_tree_to_tree(&diff, self.private, parentTree, tree, &diffOptions);
                   if ((status == GIT_OK) && theOptions.followRenames) {
                     status = git_diff_find_similar(diff, &findOptions);
                   }
