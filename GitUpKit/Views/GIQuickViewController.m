@@ -350,8 +350,12 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 }
 
 - (void)setCommit:(GCHistoryCommit *)commit {
-  self.rightController.commit = commit;
-  self.leftController.selectedCommit = commit;
+  if (self.rightController.commit.autoIncrementID != commit.autoIncrementID) {
+    self.rightController.commit = commit;
+  }
+  if (self.leftController.selectedCommit.autoIncrementID != commit.autoIncrementID) {
+     self.leftController.selectedCommit = commit;
+  }
 }
 
 - (void)setDelegate:(id<GIQuickViewController__Delegate__Intentions>)delegate {
