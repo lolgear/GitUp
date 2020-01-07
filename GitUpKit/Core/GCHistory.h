@@ -95,6 +95,17 @@ typedef NS_ENUM(NSUInteger, GCHistorySorting) {
 - (BOOL)reloadHistory:(GCHistory*)history referencesDidChange:(BOOL*)referencesDidChange addedCommits:(NSArray**)addedCommits removedCommits:(NSArray**)removedCommits error:(NSError**)error;
 
 - (GCHistory*)loadHistoryFromSnapshot:(GCSnapshot*)snapshot usingSorting:(GCHistorySorting)sorting error:(NSError**)error;
+@end
 
+@interface GCRepositoryHistoryFileOptions : NSObject
+@property (nonatomic, readonly) BOOL followRenames;
+@property (nonatomic, readonly) BOOL includeMerges;
+
+- (instancetype)followRenames:(BOOL)followRenames;
+- (instancetype)includeMerges:(BOOL)includeMerges;
+@end
+
+@interface GCRepository (GCHistoryFile)
+- (NSArray*)lookupCommitsForFile:(NSString*)path options:(GCRepositoryHistoryFileOptions *)options error:(NSError**)error;
 - (NSArray*)lookupCommitsForFile:(NSString*)path followRenames:(BOOL)follow error:(NSError**)error;  // git log {--follow} -p {file}
 @end
