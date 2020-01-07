@@ -1212,7 +1212,7 @@ cleanup:
 @interface GCRepositoryHistoryFileOptions ()
 @property (nonatomic) BOOL followRenames;
 @property (nonatomic) BOOL includeMerges;
-@property (nonatomic) BOOL shouldIteroverAtObjectNotFoundInTreeEntryByPath;
+@property (nonatomic) BOOL shouldIteroverWhenObjectNotFoundInTreeEntryByPath;
 @end
 
 @implementation GCRepositoryHistoryFileOptions
@@ -1222,6 +1222,10 @@ cleanup:
 }
 - (instancetype)includeMerges:(BOOL)includeMerges {
   self.includeMerges = includeMerges;
+  return self;
+}
+- (instancetype)shouldIteroverWhenObjectNotFoundInTreeEntryByPath:(BOOL)shouldIteroverWhenObjectNotFoundInTreeEntryByPath {
+  self.shouldIteroverWhenObjectNotFoundInTreeEntryByPath = shouldIteroverWhenObjectNotFoundInTreeEntryByPath;
   return self;
 }
 @end
@@ -1310,7 +1314,7 @@ cleanup:
             git_tree_entry_free(entry);
           } else if (status == GIT_ENOTFOUND) {
             // ignore error if option not set.
-            status = theOptions.shouldIteroverAtObjectNotFoundInTreeEntryByPath ? GIT_ITEROVER : GIT_OK ;
+            status = theOptions.shouldIteroverWhenObjectNotFoundInTreeEntryByPath ? GIT_ITEROVER : GIT_OK;
           }
           git_tree_free(tree);
         }
