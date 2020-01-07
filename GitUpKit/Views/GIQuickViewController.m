@@ -317,7 +317,27 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
     
     [self toggleLeftView];
   } else {
-    // OOPS!
+    NSView *leftView = self.leftController.view;
+    if (leftView.superview != nil) {
+      NSView *superview = leftView.superview;
+      NSArray *constraints = @[
+        [NSLayoutConstraint constraintWithItem:leftView attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:superview attribute:NSLayoutAttributeLeft multiplier:1.0 constant:0.0],
+        [NSLayoutConstraint constraintWithItem:leftView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:superview attribute:NSLayoutAttributeWidth multiplier:0.3 constant:0.0]
+      ];
+      NSArray *verticalConstraints = [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[view]|" options:0 metrics:nil views:@{@"view": leftView}];
+      [NSLayoutConstraint activateConstraints:[constraints arrayByAddingObjectsFromArray:verticalConstraints]];
+    }
+    NSView *rightView = self.rightController.view;
+    if (rightView.superview != nil) {
+      NSView *superview = rightView.superview;
+      self.hiddenConstraint = [NSLayoutConstraint constraintWithItem:rightView attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:superview attribute:NSLayoutAttributeLeft multiplier:1.0 constant:0.0];
+      self.revealedConstraint = [NSLayoutConstraint constraintWithItem:rightView attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:leftView attribute:NSLayoutAttributeRight multiplier:1.0 constant:0.0];
+      NSArray *constraints = @[
+        [NSLayoutConstraint constraintWithItem:rightView attribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationEqual toItem:superview attribute:NSLayoutAttributeRight multiplier:1.0 constant:0.0],
+      ];
+      NSArray *verticalConstraints = [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[view]|" options:0 metrics:nil views:@{@"view": rightView}];
+      [NSLayoutConstraint activateConstraints:[constraints arrayByAddingObjectsFromArray:verticalConstraints]];
+    }
   }
 }
 
