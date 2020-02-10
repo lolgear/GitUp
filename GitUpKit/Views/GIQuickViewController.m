@@ -40,7 +40,7 @@
 @property(nonatomic, weak) IBOutlet GIDualSplitView* mainSplitView;
 @property(nonatomic, weak) IBOutlet GIDualSplitView* infoSplitView;
 
-@property(nonatomic, weak) id <GIQuickViewController__Delegate__Intentions> delegate;
+@property(nonatomic, weak) id <GIQuickViewControllerDelegate> delegate;
 @end
 
 @implementation GIQuickViewController {
@@ -264,9 +264,6 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 @end
 
 @implementation GIQuickViewControllerWithCommitsList
-@dynamic commit;
-@dynamic delegate;
-@dynamic list;
 
 - (GICommitListViewController *)leftController {
   return self.childViewControllers.firstObject;
@@ -378,13 +375,31 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
   }
 }
 
-- (void)setDelegate:(id<GIQuickViewController__Delegate__Intentions>)delegate {
+- (GCHistoryCommit *)commit {
+  return self.rightController.commit;
+}
+
+- (void)setDelegate:(id<GIQuickViewControllerDelegate>)delegate {
   self.rightController.delegate = delegate;
+}
+
+- (id<GIQuickViewControllerDelegate>)delegate {
+  return self.rightController.delegate;
 }
 
 - (void)setList:(NSArray<GCHistoryCommit *> *)list {
   self.leftController.results = list;
   [self toggleLeftView];
+}
+
+- (NSArray<GCHistoryCommit *> *)list {
+  NSMutableArray* result = [NSMutableArray new];
+  for (GCHistoryCommit* element in self.leftController.results) {
+    if ([element isKindOfClass:GCHistoryCommit.class]) {
+      [result addObject:element];
+    }
+  }
+  return [result copy];
 }
 
 #pragma mark - CommitListControllerDelegate

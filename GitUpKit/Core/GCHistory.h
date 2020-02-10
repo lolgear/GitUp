@@ -104,6 +104,9 @@ typedef NS_ENUM(NSUInteger, GCHistorySorting) {
 - (instancetype)followRenames:(BOOL)followRenames;
 - (instancetype)includeMerges:(BOOL)includeMerges;
 - (instancetype)shouldIteroverWhenObjectNotFoundInTreeEntryByPath:(BOOL)shouldIteroverWhenObjectNotFoundInTreeEntryByPath;
+
+#pragma mark - Initialization
+- (instancetype)initWithFollowRenames:(BOOL)followRenames includeMerges:(BOOL)includeMerges shouldIteroverWhenObjectNotFoundInTreeEntryByPath:(BOOL)shouldIteroverWhenObjectNotFoundInTreeEntryByPath;
 @end
 
 @interface GCRepository (GCHistoryFile)

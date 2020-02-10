@@ -1228,6 +1228,16 @@ cleanup:
   self.shouldIteroverWhenObjectNotFoundInTreeEntryByPath = shouldIteroverWhenObjectNotFoundInTreeEntryByPath;
   return self;
 }
+
+#pragma mark - Initialization
+- (instancetype)initWithFollowRenames:(BOOL)followRenames includeMerges:(BOOL)includeMerges shouldIteroverWhenObjectNotFoundInTreeEntryByPath:(BOOL)shouldIteroverWhenObjectNotFoundInTreeEntryByPath {
+  if ((self = [super init])) {
+    self.followRenames = followRenames;
+    self.includeMerges = includeMerges;
+    self.shouldIteroverWhenObjectNotFoundInTreeEntryByPath = shouldIteroverWhenObjectNotFoundInTreeEntryByPath;
+  }
+  return self;
+}
 @end
 
 @implementation GCRepository (GCHistoryFile)
@@ -1251,11 +1261,6 @@ cleanup:
     if (status == GIT_OK) {
       git_commit* commit;
       status = git_commit_lookup(&commit, self.private, &oid);
-//      if (0 && (status == GIT_OK)) {
-//        printf("here: %s\n", git_commit_summary(commit));
-//        git_commit_free(commit);
-//        continue;
-//      }
       if (status == GIT_OK) {
         git_tree* tree;
         status = git_commit_tree(&tree, commit);
@@ -1291,7 +1296,6 @@ cleanup:
                         GCCommit* newCommit = [[GCCommit alloc] initWithRepository:self commit:copy_commit];
                         [commits addObject:newCommit];
                         [newCommit release];
-                        //                        commit = NULL; // well, if we are here, we should terminate for-loop (count = git_commit_parentcount(commit))
                         if (delta->status == GIT_DELTA_RENAMED) {
                           free(fileName);
                           fileName = strdup(delta->old_file.path);
@@ -1336,7 +1340,7 @@ cleanup:
 }
 
 - (NSArray*)lookupCommitsForFile:(NSString*)path followRenames:(BOOL)follow error:(NSError**)error {
-  return [self lookupCommitsForFile:path options:[[GCRepositoryHistoryFileOptions new] followRenames:follow] error:error];
+  return [self lookupCommitsForFile:path options:[[GCRepositoryHistoryFileOptions alloc] initWithFollowRenames:follow includeMerges:NO shouldIteroverWhenObjectNotFoundInTreeEntryByPath:NO] error:error];
 }
 
 @end

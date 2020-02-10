@@ -104,7 +104,6 @@ static NSString* _diffTemporaryDirectoryPath = nil;
   if (paths.count == 0) {
     return @[];
   }
-//  GCHistory *history = [self.repository loadHistoryUsingSorting:kGCHistorySorting_ReverseChronological error:error];
   NSArray *commits = [self.repository lookupCommitsForFile:paths.firstObject followRenames:YES error:error];
   if (error && *error) {
     return @[];
