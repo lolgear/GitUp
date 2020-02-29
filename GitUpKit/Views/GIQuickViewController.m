@@ -371,10 +371,10 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 }
 
 - (void)setCommit:(GCHistoryCommit *)commit {
-  if (self.rightController.commit.autoIncrementID != commit.autoIncrementID) {
+  if (self.rightController.commit.autoIncrementID != commit.autoIncrementID || self.rightController.commit == nil) {
     self.rightController.commit = commit;
   }
-  if (self.leftController.selectedCommit.autoIncrementID != commit.autoIncrementID) {
+  if (self.leftController.selectedCommit.autoIncrementID != commit.autoIncrementID || self.leftController.selectedCommit == nil) {
      self.leftController.selectedCommit = commit;
   }
 }
