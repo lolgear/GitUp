@@ -265,6 +265,7 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 
 @implementation GIQuickViewControllerWithCommitsList
 
+#pragma mark - Accessors
 - (GICommitListViewController *)leftController {
   return self.childViewControllers.firstObject;
 }
@@ -273,6 +274,7 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
   return self.childViewControllers.lastObject;
 }
 
+#pragma mark - Actions
 - (void)toggleLeftView {
   BOOL shouldReveal = self.leftController.results.count > 0;
   self.revealedConstraint.active = shouldReveal;
@@ -285,6 +287,7 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
   } completionHandler:nil];
 }
 
+#pragma mark - Layout
 - (void)addConstraints {
   if (@available(macOS 10.11, *)) {
     NSView *leftView = self.leftController.view;
@@ -338,6 +341,7 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
   }
 }
 
+#pragma mark - View Lifecycle
 - (void)loadView {
   self.view = [[GIView alloc] initWithFrame:NSScreen.mainScreen.frame];
 }
@@ -375,6 +379,7 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
   }
 }
 
+#pragma mark - Getters / Setters
 - (GCHistoryCommit *)commit {
   return self.rightController.commit;
 }
@@ -410,4 +415,11 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
   // TODO: add quick view model.
   // also we should update QuickViewModel to be in touch with toolbar...
 }
+
+#pragma mark - GIViewController
+- (void)viewDidFinishLiveResize {
+  [self.leftController viewDidFinishLiveResize];
+  [self.rightController viewDidFinishLiveResize];
+}
+
 @end
