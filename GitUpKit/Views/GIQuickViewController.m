@@ -272,8 +272,8 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 #pragma mark - Actions
 - (void)toggleLeftView {
   BOOL shouldReveal = self.isHistoryShown;
-  self.revealedConstraint.active = shouldReveal;
   self.hiddenConstraint.active = !shouldReveal;
+  self.revealedConstraint.active = shouldReveal;
   [self.view setNeedsDisplay:YES];
   [NSAnimationContext runAnimationGroup:^(NSAnimationContext * _Nonnull context) {
     context.duration = 0.25;
