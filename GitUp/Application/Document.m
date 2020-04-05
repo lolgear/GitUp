@@ -934,8 +934,8 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 - (void)_enterQuickViewWithHistoryCommit:(GCHistoryCommit*)commit commitList:(NSArray*)commitList {
   __weak typeof(self) weakSelf = self;
   [_quickViewModel enterWithHistoryCommit:commit commitList:commitList onResult:^(GCHistoryCommit * _Nonnull theCommit, NSArray * _Nullable theList) {
-    _quickViewController.list = commitList;
     _quickViewController.commit = commit;
+    _quickViewController.list = commitList;
     [weakSelf _updateToolBar];
     [weakSelf _setWindowMode:kWindowModeString_Map_QuickView];
   }];
@@ -1440,8 +1440,8 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 }
 
 #pragma mark - GIQuickViewControllerDelegate
-- (void)quickViewWantsToShowSelectedCommitsList:(NSArray <GCHistoryCommit *> *)commitsList {
-  [self _enterQuickViewWithHistoryCommit:commitsList.firstObject commitList:commitsList];
+- (void)quickViewWantsToShowSelectedCommitsList:(NSArray<GCHistoryCommit *> *)commitsList selectedCommit:(GCHistoryCommit *)commit {
+  [self _enterQuickViewWithHistoryCommit:commit commitList:commitsList];
 }
 
 - (void)quickViewDidSelectCommit:(GCHistoryCommit *)commit commitsList:(NSArray<GCHistoryCommit *> *)commitsList {
