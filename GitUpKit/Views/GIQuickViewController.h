@@ -18,7 +18,7 @@
 @class GCHistoryCommit;
 @class GCCommit;
 @protocol GIQuickViewControllerDelegate
-- (void)quickViewWantsToShowSelectedCommitsList:(NSArray <GCHistoryCommit *> *)commitsList;
+- (void)quickViewWantsToShowSelectedCommitsList:(NSArray <GCHistoryCommit *> *)commitsList selectedCommit:(GCHistoryCommit *)commit;
 - (void)quickViewDidSelectCommit:(GCHistoryCommit *)commit commitsList:(NSArray <GCHistoryCommit *>*)commitsList;
 @end
 

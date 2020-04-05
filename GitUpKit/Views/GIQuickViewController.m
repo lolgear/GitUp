@@ -41,6 +41,8 @@
 @property(nonatomic, weak) IBOutlet GIDualSplitView* infoSplitView;
 
 @property(nonatomic, weak) id <GIQuickViewControllerDelegate> delegate;
+
+@property(nonatomic, copy) void(^willShowContextualMenu)(NSMenu *menu, GCDiffDelta *delta, GCIndexConflict *conflict);
 @end
 
 @implementation GIQuickViewController {
@@ -221,22 +223,10 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
     [menu addItemWithTitle:NSLocalizedString(@"Restore File to This Version…", nil) block:NULL];
   }
   
-  if (GC_FILE_MODE_IS_FILE(delta.newFile.mode)) {
-    [menu addItemWithTitle:NSLocalizedString(@"Show file history...", nil) block:^{
-      // git log
-      // show selected files history.
-      __weak typeof(self) weakSelf = self;
-      [self getSelectedCommitsForFilesMatchingPaths:@[delta.canonicalPath] result:^(NSArray *commits) {
-        NSMutableArray *result = [NSMutableArray new];
-        for (GCCommit *commit in commits) {
-          GCHistoryCommit *historyCommit = [weakSelf.repository.history historyCommitForCommit:commit];
-          [result addObject:historyCommit];
-        }
-        [weakSelf.delegate quickViewWantsToShowSelectedCommitsList:[result copy]];
-      }];
-    }];
+  if (self.willShowContextualMenu) {
+    self.willShowContextualMenu(menu, delta, conflict);
   }
-
+  
   return menu;
 }
 
@@ -274,9 +264,14 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
   return self.childViewControllers.lastObject;
 }
 
+#pragma mark - Check
+- (BOOL)isHistoryShown {
+  return self.leftController.results.count > 0;
+}
+
 #pragma mark - Actions
 - (void)toggleLeftView {
-  BOOL shouldReveal = self.leftController.results.count > 0;
+  BOOL shouldReveal = self.isHistoryShown;
   self.revealedConstraint.active = shouldReveal;
   self.hiddenConstraint.active = !shouldReveal;
   [self.view setNeedsDisplay:YES];
@@ -284,7 +279,8 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
     context.duration = 0.25;
     context.allowsImplicitAnimation = YES;
     [self.view displayIfNeeded];
-  } completionHandler:nil];
+  } completionHandler:^{
+  }];
 }
 
 #pragma mark - Layout
@@ -357,6 +353,10 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
   NSViewController *rightController = ({
     GIQuickViewController *quickView = [[GIQuickViewController alloc] initWithRepository:self.repository];
     // setup?
+    __weak typeof(self) weakSelf = self;
+    quickView.willShowContextualMenu = ^(NSMenu *menu, GCDiffDelta *delta, GCIndexConflict *conflict) {
+      [weakSelf willShowContextualMenu:menu delta:delta conflict:conflict];
+    };
     quickView;
   });
 
@@ -418,8 +418,36 @@ static NSString* _CleanUpCommitMessage(NSString* message) {
 
 #pragma mark - GIViewController
 - (void)viewDidFinishLiveResize {
+  NSLog(@"We are here!");
   [self.leftController viewDidFinishLiveResize];
   [self.rightController viewDidFinishLiveResize];
+}
+
+#pragma mark - Contextual Menu Handling
+- (void)willShowContextualMenu:(NSMenu *)menu delta:(GCDiffDelta *)delta conflict:(GCIndexConflict *)conflict {
+  if (GC_FILE_MODE_IS_FILE(delta.newFile.mode)) {
+    if (self.isHistoryShown) {
+      __weak typeof(self) weakSelf = self;
+      [menu addItemWithTitle:NSLocalizedString(@"Hide file history...", nil) block:^{
+        [weakSelf.delegate quickViewWantsToShowSelectedCommitsList:nil selectedCommit:weakSelf.commit];
+      }];
+    }
+    else {
+      __weak typeof(self) weakSelf = self;
+      [menu addItemWithTitle:NSLocalizedString(@"Show file history...", nil) block:^{
+        // git log
+        // show selected files history.
+        [weakSelf getSelectedCommitsForFilesMatchingPaths:@[delta.canonicalPath] result:^(NSArray *commits) {
+          NSMutableArray *result = [NSMutableArray new];
+          for (GCCommit *commit in commits) {
+            GCHistoryCommit *historyCommit = [weakSelf.repository.history historyCommitForCommit:commit];
+            [result addObject:historyCommit];
+          }
+          [weakSelf.delegate quickViewWantsToShowSelectedCommitsList:[result copy] selectedCommit:result.firstObject];
+        }];
+      }];
+    }
+  }
 }
 
 @end
