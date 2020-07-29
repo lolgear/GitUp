@@ -11,7 +11,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface NSView (Embedding)
 - (void)embedView:(NSView *)view;
-+ (void)embedView:(NSView *)view inView:(NSView *)superview;
 @end
 
 NS_ASSUME_NONNULL_END

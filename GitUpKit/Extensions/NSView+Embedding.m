@@ -15,6 +15,7 @@
 + (void)embedView:(NSView *)view inView:(NSView *)superview {
   [superview addSubview:view];
   view.translatesAutoresizingMaskIntoConstraints = NO;
+  
   if (superview != nil && view != nil) {
     if (@available(macOS 10.11, *)) {
       NSArray *constraints = @[
