@@ -1216,19 +1216,6 @@ cleanup:
 @end
 
 @implementation GCRepositoryHistoryFileOptions
-- (instancetype)followRenames:(BOOL)followRenames {
-  self.followRenames = followRenames;
-  return self;
-}
-- (instancetype)includeMerges:(BOOL)includeMerges {
-  self.includeMerges = includeMerges;
-  return self;
-}
-- (instancetype)shouldIteroverWhenObjectNotFoundInTreeEntryByPath:(BOOL)shouldIteroverWhenObjectNotFoundInTreeEntryByPath {
-  self.shouldIteroverWhenObjectNotFoundInTreeEntryByPath = shouldIteroverWhenObjectNotFoundInTreeEntryByPath;
-  return self;
-}
-
 #pragma mark - Initialization
 - (instancetype)initWithFollowRenames:(BOOL)followRenames includeMerges:(BOOL)includeMerges shouldIteroverWhenObjectNotFoundInTreeEntryByPath:(BOOL)shouldIteroverWhenObjectNotFoundInTreeEntryByPath {
   if ((self = [super init])) {
