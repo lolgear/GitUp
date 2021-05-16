@@ -25,11 +25,11 @@
 static const NSPasteboardType GIPasteboardTypeFileRowIndex = @"co.gitup.mac.file-row-index";
 static const NSPasteboardType GIPasteboardTypeFileURL = @"public.file-url";
 
-@interface GIFileCellView : NSTableCellView
+@interface GIFileCellView : GITableCellView
 @end
 
 @interface GIFilesTableView : GITableView
-@property(nonatomic, assign) GIDiffFilesViewController* controller;
+@property(nonatomic, weak) GIDiffFilesViewController* controller;
 @end
 
 @interface GIDiffFilesViewController () <NSFilePromiseProviderDelegate>

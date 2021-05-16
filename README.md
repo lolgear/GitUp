@@ -6,7 +6,7 @@ GitUp
 **Work quickly, safely, and without headaches. The Git interface you've been missing all your life has finally arrived.**
 
 <p align="center">
-<img src="http://i.imgur.com/t6iC9TC.png">
+<img src="https://i.imgur.com/JuQIxJu.png" width="50%" height="50%"><img src="https://i.imgur.com/9rgXktz.png" width="50%" height="50%">
 </p>
 
 Git recently celebrated its 10 years anniversary, but most engineers are still confused by its intricacy (3 of the [top 5 questions of all time](http://stackoverflow.com/questions?sort=votes) on Stack Overflow are Git related). Since Git turns even simple actions into mystifying commands (“git add” to stage versus “git reset HEAD” to unstage anyone?), it’s no surprise users waste time, get frustrated, distract the rest of their team for help, or worse, screw up their repo!
@@ -39,6 +39,11 @@ To build GitUp yourself, simply run the command `git clone --recursive https://g
 <p align="center">
 <img src="http://i.imgur.com/dWpJExk.png">
 </p>
+
+**Alternatively**, if you do have a developer account, you can create the file "Xcode-Configurations/DEVELOPMENT_TEAM.xcconfig" with the following build setting as its content:
+> DEVELOPMENT_TEAM = [Your TeamID]
+
+For a more detailed description of this, you can have a look at the comments at the end of the file "Xcode-Configurations/Base.xcconfig". 
 
 GitUpKit
 ========

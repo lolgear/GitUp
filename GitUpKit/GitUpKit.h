@@ -29,6 +29,8 @@
 // Utilities
 #import <GitUpKit/GIAppKit.h>
 #import <GitUpKit/GIColorView.h>
+#import <GitUpKit/GICustomToolbarItem.h>
+#import <GitUpKit/GILaunchServicesLocator.h>
 #import <GitUpKit/GILinkButton.h>
 #import <GitUpKit/GIModalView.h>
 #import <GitUpKit/GIViewController.h>

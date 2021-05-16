@@ -21,6 +21,7 @@
 
 #import "GIWindowController.h"
 #import "GIInterface.h"
+#import "GCLiveRepository+Utilities.h"
 #import "GCRepository+Utilities.h"
 #import "GCHistory+Rewrite.h"
 #import "XLFacilityMacros.h"
@@ -568,19 +569,6 @@
   }
 }
 
-- (id)_smartCheckoutTarget:(GCHistoryCommit*)commit {
-  NSArray* branches = commit.localBranches;
-  if (branches.count > 1) {
-    GCHistoryLocalBranch* headBranch = self.repository.history.HEADBranch;
-    NSUInteger index = [branches indexOfObject:headBranch];
-    if (index != NSNotFound) {
-      return [branches objectAtIndex:((index + 1) % branches.count)];
-    }
-  }
-  GCHistoryLocalBranch* branch = branches.firstObject;
-  return branch ? branch : commit;
-}
-
 - (void)_promptForCommitMessage:(NSString*)message withTitle:(NSString*)title button:(NSString*)button block:(void (^)(NSString* message))block {
   _messageTextField.stringValue = title;
   _messageTextView.string = message;
@@ -677,7 +665,7 @@
   }
 
   if (item.action == @selector(checkoutSelectedCommit:)) {
-    id target = [self _smartCheckoutTarget:commit];
+    id target = [self.repository smartCheckoutTarget:commit];
     if ([target isKindOfClass:[GCLocalBranch class]]) {
       _checkoutMenuItem.title = [NSString stringWithFormat:NSLocalizedString(@"Checkout \"%@\" Branch", nil), [target name]];
       return ![self.repository.history.HEADBranch isEqualToBranch:target];
@@ -863,31 +851,7 @@
 
 - (IBAction)checkoutSelectedCommit:(id)sender {
   GCHistoryCommit* commit = _graphView.selectedCommit;
-  id target = [self _smartCheckoutTarget:commit];
-  if ([target isKindOfClass:[GCLocalBranch class]]) {
-    [self checkoutLocalBranch:target];
-  } else {
-    GCHistoryRemoteBranch* branch = commit.remoteBranches.firstObject;
-    if (branch && ![self.repository.history historyLocalBranchWithName:branch.branchName]) {
-      NSAlert* alert = [[NSAlert alloc] init];
-      alert.messageText = NSLocalizedString(@"Do you want to just checkout the commit or also create a new local branch?", nil);
-      alert.informativeText = [NSString stringWithFormat:NSLocalizedString(@"The selected commit is also the tip of the remote branch \"%@\".", nil), branch.name];
-      [alert addButtonWithTitle:NSLocalizedString(@"Create Local Branch", nil)];
-      [alert addButtonWithTitle:NSLocalizedString(@"Checkout Commit", nil)];
-      [alert addButtonWithTitle:NSLocalizedString(@"Cancel", nil)];
-      alert.type = kGIAlertType_Note;
-      [self presentAlert:alert
-          completionHandler:^(NSInteger returnCode) {
-            if (returnCode == NSAlertFirstButtonReturn) {
-              [self checkoutRemoteBranch:branch];
-            } else if (returnCode == NSAlertSecondButtonReturn) {
-              [self checkoutCommit:target];
-            }
-          }];
-    } else {
-      [self checkoutCommit:target];
-    }
-  }
+  [self.repository smartCheckoutCommit:commit window:self.view.window];
 }
 
 - (IBAction)createTagAtSelectedCommit:(id)sender {
@@ -916,6 +880,11 @@
   [self editCommitMessage:commit];
 }
 
+- (IBAction)copySelectedCommitMessage:(id)sender {
+  GCHistoryCommit* commit = self.graphView.selectedNode.commit;
+  [self copyCommitMessage:commit];
+}
+
 - (IBAction)rewriteSelectedCommit:(id)sender {
   GCHistoryCommit* commit = self.graphView.selectedNode.commit;
   if ([self checkCleanRepositoryForOperationOnCommit:commit]) {
@@ -935,9 +904,24 @@
   [self revertCommit:commit againstLocalBranch:self.repository.history.HEADBranch];
 }
 
+- (GCHistoryLocalBranch*)branchToDeleteForSelectedCommit:(GCHistoryCommit*)commit {
+  NSArray<GCHistoryLocalBranch*>* localBranches = commit.localBranches;
+  NSString* headBranchName = self.repository.history.HEADBranch.name;
+
+  NSInteger index = [localBranches indexOfObjectPassingTest:^BOOL(GCHistoryLocalBranch* _Nonnull obj, NSUInteger idx, BOOL* _Nonnull stop) {
+    return ![headBranchName isEqualToString:obj.name];
+  }];
+
+  if (index == NSNotFound) {
+    return localBranches.firstObject;
+  }
+
+  return localBranches[index];
+}
+
 - (IBAction)deleteSelectedCommit:(id)sender {
   GCHistoryCommit* commit = _graphView.selectedCommit;
-  GCHistoryLocalBranch* localBranch = commit.localBranches.firstObject;
+  GCHistoryLocalBranch* localBranch = [self branchToDeleteForSelectedCommit:commit];
   if (localBranch) {
     NSAlert* alert = [[NSAlert alloc] init];
     alert.messageText = NSLocalizedString(@"Do you want to delete the commit or the local branch?", nil);
@@ -1068,7 +1052,7 @@
 
 - (IBAction)_checkoutRemoteBranch:(id)sender {
   GCHistoryRemoteBranch* branch = [(NSMenuItem*)sender representedObject];
-  [self checkoutRemoteBranch:branch];
+  [self.repository checkoutRemoteBranch:branch window:self.view.window];
 }
 
 - (IBAction)_fetchRemoteBranch:(id)sender {

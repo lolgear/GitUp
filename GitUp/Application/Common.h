@@ -15,12 +15,6 @@
 
 #define MAKE_ERROR(message) [NSError errorWithDomain:@"App" code:-1 userInfo:@{NSLocalizedDescriptionKey : message}]
 
-#define kReleaseChannel_Stable @"stable"
-#define kReleaseChannel_Continuous @"continuous"
-#define kTheme_SystemPreference @"systemTheme"
-#define kTheme_Dark @"darkTheme"
-#define kTheme_Light @"lightTheme"
-
 #define kUserDefaultsKey_FirstLaunch @"FirstLaunch"  // BOOL
 #define kUserDefaultsKey_SkipInstallCLT @"SkipInstallCLT"  // BOOL
 #define kUserDefaultsKey_LastVersion @"LastVersion"  // NSUInteger
@@ -41,5 +35,3 @@
 #define kURL_Issues @"https://github.com/git-up/GitUp/issues"
 #define kURL_Wiki @"https://github.com/git-up/GitUp/wiki"
 #define kURL_ReleaseNotes @"https://github.com/git-up/GitUp/releases"
-
-#define kURL_Twitter @"https://twitter.com/GitUpApp"

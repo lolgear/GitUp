@@ -16,11 +16,14 @@
 #import "Document.h"
 #import "WindowController.h"
 #import "Common.h"
-#import "AppDelegate.h"
 
 // Move to GitUpKit?
 #import "QuickViewModel.h"
 
+#import "KeychainAccessor.h"
+#import "AuthenticationWindowController.h"
+
+#import <GitUpKit/GitUpKit.h>
 #import <GitUpKit/XLFacilityMacros.h>
 
 #define kWindowModeString_Map @"map"
@@ -39,10 +42,6 @@
 #define kSideViewIdentifier_Reflog @"reflog"
 #define kSideViewIdentifier_Ancestors @"ancestors"
 
-#define kToolbarItem_Left @"left"
-#define kToolbarItem_Title @"title"
-#define kToolbarItem_Right @"right"
-
 #define kRestorableStateKey_WindowMode @"windowMode"
 
 #define kSideViewAnimationDuration 0.15  // seconds
@@ -51,8 +50,24 @@
 
 #define kMaxProgressRefreshRate 10.0  // Hz
 
-@interface Document () <NSToolbarDelegate, NSTextFieldDelegate, GCLiveRepositoryDelegate, GIWindowControllerDelegate, GIMapViewControllerDelegate, GISnapshotListViewControllerDelegate, GIUnifiedReflogViewControllerDelegate, GIQuickViewControllerDelegate, GICommitListViewControllerDelegate, GICommitRewriterViewControllerDelegate, GICommitSplitterViewControllerDelegate, GIConflictResolverViewControllerDelegate>
-@property (nonatomic, strong) AuthenticationWindowController *authenticationWindowController;
+#define kNavigateMinWidth 174.0
+#define kNavigateSegmentWidth 34.0
+#define kTitleMaxWidth HUGE_VALF
+#define kSearchFieldCompactWidth 180.0
+#define kSearchFieldExpandedWidth 238.0
+
+typedef NS_ENUM(NSInteger, NavigationAction) {
+  kNavigationAction_Exit = 0,
+  kNavigationAction_Next,
+  kNavigationAction_Previous
+};
+
+@interface Document () <NSToolbarDelegate, NSTextFieldDelegate, GCLiveRepositoryDelegate, GIWindowControllerDelegate, GIMapViewControllerDelegate, GISnapshotListViewControllerDelegate, GIUnifiedReflogViewControllerDelegate, GICommitListViewControllerDelegate, GICommitRewriterViewControllerDelegate, GICommitSplitterViewControllerDelegate, GIConflictResolverViewControllerDelegate>
+@property(nonatomic, strong) AuthenticationWindowController* authenticationWindowController;
+@property(nonatomic) IBOutlet GICustomToolbarItem* navigateItem;
+@property(nonatomic) IBOutlet GICustomToolbarItem* titleItem;
+@property(nonatomic) IBOutlet NSToolbarItem* snapshotsItem;
+@property(nonatomic) IBOutlet NSToolbarItem<GISearchToolbarItem>* searchItem;
 @end
 
 static NSDictionary* _helpPlist = nil;
@@ -82,6 +97,10 @@ static inline WindowModeID _WindowModeIDFromString(NSString* mode) {
   }
   XLOG_DEBUG_UNREACHABLE();
   return kWindowModeID_Map;
+}
+
+static inline BOOL _WindowModeIsPrimary(NSString* mode) {
+  return [mode isEqualToString:kWindowModeString_Map] || [mode isEqualToString:kWindowModeString_Commit] || [mode isEqualToString:kWindowModeString_Stashes];
 }
 
 @implementation Document {
@@ -124,6 +143,15 @@ static inline WindowModeID _WindowModeIDFromString(NSString* mode) {
   BOOL _abortIndexing;
 }
 
+#pragma mark - Properties
+- (AuthenticationWindowController*)authenticationWindowController {
+  if (!_authenticationWindowController) {
+    _authenticationWindowController = [[AuthenticationWindowController alloc] init];
+  }
+  return _authenticationWindowController;
+}
+
+#pragma mark - Initialize
 + (void)initialize {
   NSString* path = [[NSBundle mainBundle] pathForResource:@"Help" ofType:@"plist"];
   if (path) {
@@ -269,31 +297,37 @@ static void _CheckTimerCallBack(CFRunLoopTimerRef timer, void* info) {
   if (frameString) {
     [_mainWindow setFrameFromString:frameString];
   }
-  [_mainWindow setToolbar:_toolbar];
-  _mainWindow.titleVisibility = NSWindowTitleHidden;
-  _contentView.wantsLayer = YES;
-  _leftView.wantsLayer = YES;
-  _titleView.wantsLayer = YES;
-  _rightView.wantsLayer = YES;
 
-  // Text fields must be drawn on an opaque background pre-Mojave to avoid
-  // subpixel antialiasing issues during animation.
-  if (@available(macOS 10.14, *)) {
+  NSSegmentedControl* modeControl = (NSSegmentedControl*)_navigateItem.primaryControl;
+  NSSegmentedControl* navigateControl = (NSSegmentedControl*)_navigateItem.secondaryControl;
+  if (@available(macOS 11, *)) {
+    // Fully custom symbols not available before 11.0.
+    [modeControl setImage:[NSImage imageNamed:@"circle.2.line.diagonal"] forSegment:kWindowModeID_Map];
   } else {
+    _mainWindow.titleVisibility = NSWindowTitleHidden;
+    [modeControl setWidth:kNavigateSegmentWidth forSegment:kWindowModeID_Map];
+    [modeControl setWidth:kNavigateSegmentWidth forSegment:kWindowModeID_Commit];
+    [modeControl setWidth:kNavigateSegmentWidth forSegment:kWindowModeID_Stashes];
+    [navigateControl setWidth:kNavigateSegmentWidth forSegment:kNavigationAction_Exit];
+    [navigateControl setWidth:kNavigateSegmentWidth forSegment:kNavigationAction_Next];
+    [navigateControl setWidth:kNavigateSegmentWidth forSegment:kNavigationAction_Previous];
+  }
+
+  if (@available(macOS 10.14, *)) {
+    NSLayoutConstraint* searchFieldPreferredWidth = [_searchItem.searchField.widthAnchor constraintEqualToConstant:kSearchFieldCompactWidth];
+    searchFieldPreferredWidth.priority = NSLayoutPriorityDefaultHigh - 20;
+    NSLayoutConstraint* searchFieldMaxWidth = [_searchItem.searchField.widthAnchor constraintLessThanOrEqualToConstant:kSearchFieldExpandedWidth];
+    [NSLayoutConstraint activateConstraints:@[ searchFieldPreferredWidth, searchFieldMaxWidth ]];
+  } else {
+    _navigateItem.minSize = NSMakeSize(kNavigateMinWidth, _navigateItem.minSize.height);
+    _titleItem.maxSize = NSMakeSize(kTitleMaxWidth, _titleItem.maxSize.height);
+
+    // Text fields must be drawn on an opaque background pre-Mojave to avoid
+    // subpixel antialiasing issues during animation.
     for (NSTextField* field in @[ _infoTextField1, _infoTextField2, _progressTextField ]) {
       field.drawsBackground = YES;
       field.backgroundColor = _mainWindow.backgroundColor;
     }
-  }
-
-  if (@available(macOS 10.11, *)) {
-    // Fields have different alignment rects from their bounds starting in 10.11
-    // and will appear slightly small when laid out just by autoresizing.
-    // Manually make it its preferred height to align with the snapshots button.
-    CGRect searchFieldFrame = _searchField.frame;
-    searchFieldFrame.size.height = [_searchField sizeThatFits:searchFieldFrame.size].height;
-    searchFieldFrame.origin.y = floor(NSMidY(_snapshotsButton.frame) - (searchFieldFrame.size.height / 2));
-    _searchField.frame = searchFieldFrame;
   }
 
   _mapViewController = [[GIMapViewController alloc] initWithRepository:_repository];
@@ -376,7 +410,6 @@ static void _CheckTimerCallBack(CFRunLoopTimerRef timer, void* info) {
   _hiddenWarningView.layer.cornerRadius = 10.0;
 
   [self _setSearchFieldPlaceholder:NSLocalizedString(@"Preparing Search…", nil)];
-  _searchField.enabled = NO;
 
   for (NSMenuItem* item in _showMenu.itemArray) {  // We don't want first responder targets
     if (item.target == nil && item.action != NULL) {
@@ -391,7 +424,6 @@ static void _CheckTimerCallBack(CFRunLoopTimerRef timer, void* info) {
 
 // Override -updateChangeCount: which is trigged by NSUndoManager to do nothing and not mark document as updated
 - (void)updateChangeCount:(NSDocumentChangeType)change {
-  ;
 }
 
 - (BOOL)presentError:(NSError*)error {
@@ -518,7 +550,7 @@ static void _CheckTimerCallBack(CFRunLoopTimerRef timer, void* info) {
           if (success) {
             _searchReady = YES;
             [self _setSearchFieldPlaceholder:NSLocalizedString(@"Search Repository…", nil)];
-            _searchField.enabled = YES;
+            [_searchItem validate];
           } else {
             [self _setSearchFieldPlaceholder:NSLocalizedString(@"Search Unavailable", nil)];
             [self presentError:error];
@@ -598,7 +630,12 @@ static inline NSString* _FormatCommitCount(NSNumberFormatter* formatter, NSUInte
 - (void)_updateTitleBar {
   [_windowController synchronizeWindowTitleWithDocumentName];
   NSUInteger totalCount = _repository.history.allCommits.count;
-  _infoTextField0.stringValue = [NSString stringWithFormat:NSLocalizedString(@"%@", nil), _FormatCommitCount(_numberFormatter, totalCount)];
+  NSString* countText = [NSString stringWithFormat:NSLocalizedString(@"%@", nil), _FormatCommitCount(_numberFormatter, totalCount)];
+  _titleItem.primaryControl.stringValue = _windowController.window.title;
+  _titleItem.secondaryControl.stringValue = countText;
+  if (@available(macOS 11.0, *)) {
+    _windowController.window.subtitle = countText;
+  }
 }
 
 static NSString* _StringFromRepositoryState(GCRepositoryState state) {
@@ -740,39 +777,7 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 
 // NSToolbar automatic validation fires very often and at unpredictable times so we just do everything by hand
 - (void)_updateToolBar {
-  if ([_windowMode isEqualToString:kWindowModeString_Map_QuickView] || [_windowMode isEqualToString:kWindowModeString_Map_Diff] || [_windowMode isEqualToString:kWindowModeString_Map_Rewrite] || [_windowMode isEqualToString:kWindowModeString_Map_Split] || [_windowMode isEqualToString:kWindowModeString_Map_Resolve] || [_windowMode isEqualToString:kWindowModeString_Map_Config]) {
-    _modeControl.hidden = YES;
-    if (_quickViewModel.hasPaging) {
-      _previousButton.hidden = NO;
-      _previousButton.enabled = [self validateUserInterfaceItem:(id)_previousButton];
-      _nextButton.hidden = NO;
-      _nextButton.enabled = [self validateUserInterfaceItem:(id)_nextButton];
-    } else {
-      _previousButton.hidden = YES;
-      _nextButton.hidden = YES;
-    }
-
-    _snapshotsButton.hidden = YES;
-    _searchField.hidden = YES;
-    _exitButton.hidden = ([_windowMode isEqualToString:kWindowModeString_Map_Rewrite] || [_windowMode isEqualToString:kWindowModeString_Map_Split] || [_windowMode isEqualToString:kWindowModeString_Map_Resolve]);
-  } else {
-    _modeControl.hidden = NO;
-    _modeControl.enabled = !_windowController.hasModalView && !_repository.hasBackgroundOperationInProgress;
-    _previousButton.hidden = YES;
-    _nextButton.hidden = YES;
-
-    if ([_windowMode isEqualToString:kWindowModeString_Map]) {
-      _snapshotsButton.hidden = NO;
-      _snapshotsButton.enabled = [self validateUserInterfaceItem:(id)_snapshotsButton];
-      _snapshotsButton.state = _snapshotsView.superview ? NSControlStateValueOn : NSControlStateValueOff;
-      _searchField.hidden = NO;
-      _searchField.enabled = [self validateUserInterfaceItem:(id)_searchField];
-    } else {
-      _snapshotsButton.hidden = YES;
-      _searchField.hidden = YES;
-    }
-    _exitButton.hidden = YES;
-  }
+  [_mainWindow.toolbar validateVisibleItems];
 }
 
 - (void)_didBecomeActive:(NSNotification*)notification {
@@ -782,16 +787,12 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
     [_repository setUndoActionName:NSLocalizedString(@"External Changes", nil)];
     _repository.automaticSnapshotsEnabled = NO;
   }
-
-  [self _updateToolBar];
 }
 
 - (void)_didResignActive:(NSNotification*)notification {
   if (![_windowMode isEqualToString:kWindowModeString_Map_Resolve]) {  // Don't take automatic snapshots while conflict resolver is on screen
     _repository.automaticSnapshotsEnabled = YES;
   }
-
-  [self _updateToolBar];
 }
 
 - (void)_setWindowMode:(NSString*)mode {
@@ -806,7 +807,6 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 
     _windowMode = mode;
     [_mainTabView selectTabViewItemWithIdentifier:_windowMode];
-    [_modeControl selectSegmentWithTag:_WindowModeIDFromString(_windowMode)];
 
     // Don't let AppKit guess / restore first responder
     if ([_windowMode isEqualToString:kWindowModeString_Map]) {
@@ -850,7 +850,7 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 }
 
 - (BOOL)setWindowModeID:(WindowModeID)modeID {
-  if (!_mainWindow.attachedSheet && !_modeControl.hidden && _modeControl.enabled) {
+  if (!_mainWindow.attachedSheet && !_navigateItem.primaryControl.hidden && _navigateItem.primaryControl.enabled) {
     [self _setWindowMode:_WindowModeStringFromID(modeID)];
     return YES;
   }
@@ -1109,28 +1109,12 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 
 #pragma mark - NSToolbarDelegate
 
-- (NSToolbarItem*)toolbar:(NSToolbar*)toolbar itemForItemIdentifier:(NSString*)identifier willBeInsertedIntoToolbar:(BOOL)flag {
-  NSToolbarItem* item = [[NSToolbarItem alloc] initWithItemIdentifier:identifier];
-  if ([identifier isEqualToString:kToolbarItem_Title]) {
-    item.view = _titleView;
-    item.minSize = NSMakeSize(100, _titleView.frame.size.height);
-    item.maxSize = NSMakeSize(HUGE_VALF, _titleView.frame.size.height);
-  } else if ([identifier isEqualToString:kToolbarItem_Left]) {
-    item.view = _leftView;
-  } else if ([identifier isEqualToString:kToolbarItem_Right]) {
-    item.view = _rightView;
-  } else {
-    XLOG_DEBUG_UNREACHABLE();
-  }
-  return item;
-}
-
 - (NSArray*)toolbarDefaultItemIdentifiers:(NSToolbar*)toolbar {
-  return @[ kToolbarItem_Left, kToolbarItem_Title, kToolbarItem_Right ];
-}
-
-- (NSArray*)toolbarAllowedItemIdentifiers:(NSToolbar*)toolbar {
-  return [self toolbarDefaultItemIdentifiers:toolbar];
+  if (@available(macOS 11, *)) {
+    return @[ _navigateItem.itemIdentifier, NSToolbarFlexibleSpaceItemIdentifier, _snapshotsItem.itemIdentifier, _searchItem.itemIdentifier ];
+  } else {
+    return @[ _navigateItem.itemIdentifier, NSToolbarSpaceItemIdentifier, _titleItem.itemIdentifier, NSToolbarFlexibleSpaceItemIdentifier, _snapshotsItem.itemIdentifier, _searchItem.itemIdentifier ];
+  }
 }
 
 #pragma mark - NSTextFieldDelegate
@@ -1158,7 +1142,7 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 #pragma mark - GCRepositoryDelegate
 
 - (void)repository:(GCRepository*)repository willStartTransferWithURL:(NSURL*)url {
-  [[AppDelegate sharedDelegate] repository:repository willStartTransferWithURL:url];  // Forward to AppDelegate
+  [self.authenticationWindowController repository:repository willStartTransferWithURL:url];  // Forward to AuthenticationWindowController
 
   _infoTextField1.hidden = YES;
   _infoTextField2.hidden = YES;
@@ -1171,7 +1155,7 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 }
 
 - (BOOL)repository:(GCRepository*)repository requiresPlainTextAuthenticationForURL:(NSURL*)url user:(NSString*)user username:(NSString**)username password:(NSString**)password {
-  return [[AppDelegate sharedDelegate] repository:repository requiresPlainTextAuthenticationForURL:url user:user username:username password:password];  // Forward to AppDelegate
+  return [self.authenticationWindowController repository:repository requiresPlainTextAuthenticationForURL:url user:user username:username password:password];  // Forward to AuthenticationWindowController
 }
 
 - (void)repository:(GCRepository*)repository updateTransferProgress:(float)progress transferredBytes:(NSUInteger)bytes {
@@ -1188,7 +1172,7 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
   _infoTextField1.hidden = NO;
   _infoTextField2.hidden = NO;
 
-  [[AppDelegate sharedDelegate] repository:repository didFinishTransferWithURL:url success:success];  // Forward to AppDelegate
+  [self.authenticationWindowController repository:repository didFinishTransferWithURL:url success:success];  // Forward to AuthenticationWindowController
 }
 
 #pragma mark - GCLiveRepositoryDelegate
@@ -1480,7 +1464,6 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 #pragma mark - GICommitViewControllerDelegate
 
 - (void)commitViewController:(GICommitViewController*)controller didCreateCommit:(GCCommit*)commit {
-  ;
 }
 
 #pragma mark - GICommitRewriterViewControllerDelegate
@@ -1598,13 +1581,37 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
   }
 
   if (item.action == @selector(switchMode:)) {
-    if ([_windowMode isEqualToString:kWindowModeString_Map_QuickView] || [_windowMode isEqualToString:kWindowModeString_Map_Diff] || [_windowMode isEqualToString:kWindowModeString_Map_Rewrite] || [_windowMode isEqualToString:kWindowModeString_Map_Config] || [_windowMode isEqualToString:kWindowModeString_Map_Resolve]) {
+    NSSegmentedControl* modeControl = [(id<NSObject>)item isKindOfClass:NSSegmentedControl.self] ? (NSSegmentedControl*)item : nil;
+    NSMenuItem* menuItem = [(id<NSObject>)item isKindOfClass:NSMenuItem.self] ? (NSMenuItem*)item : nil;
+    BOOL isIncompatibleMode = !_WindowModeIsPrimary(_windowMode);
+
+    modeControl.hidden = isIncompatibleMode;
+    if (isIncompatibleMode) {
       return NO;
     }
-    [(NSMenuItem*)item setState:([(NSMenuItem*)item tag] == _WindowModeIDFromString(_windowMode) ? NSOnState : NSOffState)];
-    return YES;
+
+    WindowModeID windowModeID = _WindowModeIDFromString(_windowMode);
+    [modeControl selectSegmentWithTag:windowModeID];
+    menuItem.state = menuItem.tag == windowModeID ? NSOnState : NSOffState;
+
+    return !_windowController.hasModalView;
   }
 
+  if (item.action == @selector(navigate:)) {
+    NSSegmentedControl* navigateControl = (NSSegmentedControl*)item;
+    BOOL isIncompatibleMode = _WindowModeIsPrimary(_windowMode);
+
+    navigateControl.hidden = isIncompatibleMode;
+    if (isIncompatibleMode) {
+      return NO;
+    }
+
+    [navigateControl setEnabled:[_windowMode isEqualToString:kWindowModeString_Map_QuickView] || [_windowMode isEqualToString:kWindowModeString_Map_Diff] || [_windowMode isEqualToString:kWindowModeString_Map_Config] forSegment:kNavigationAction_Exit];
+    [navigateControl setEnabled:[_windowMode isEqualToString:kWindowModeString_Map_QuickView] && [self _hasNextQuickView] forSegment:kNavigationAction_Next];
+    [navigateControl setEnabled:[_windowMode isEqualToString:kWindowModeString_Map_QuickView] && [self _hasPreviousQuickView] forSegment:kNavigationAction_Previous];
+
+    return YES;
+  }
   if (item.action == @selector(selectPreviousCommit:)) {
     return [_windowMode isEqualToString:kWindowModeString_Map_QuickView] && [self _hasPreviousQuickView] ? YES : NO;
   }
@@ -1630,7 +1637,10 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
   alert.messageText = NSLocalizedString(@"Are you sure you want to reset the index and working directory to the current checkout?", nil);
   alert.informativeText = NSLocalizedString(@"Any operation in progress (merge, rebase, etc...) will be aborted, and any uncommitted change, including in submodules, will be discarded.\n\nThis action cannot be undone.", nil);
   alert.accessoryView = _resetView;
-  [alert addButtonWithTitle:NSLocalizedString(@"Reset", nil)];
+  NSButton* reset = [alert addButtonWithTitle:NSLocalizedString(@"Reset", nil)];
+  if (@available(macOS 11, *)) {
+    reset.hasDestructiveAction = YES;
+  }
   [alert addButtonWithTitle:NSLocalizedString(@"Cancel", nil)];
   [alert beginSheetModalForWindow:_mainWindow
                 completionHandler:^(NSInteger returnCode) {
@@ -1648,7 +1658,7 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
   if ([sender isKindOfClass:[NSMenuItem class]]) {
     [self _setWindowMode:_WindowModeStringFromID([(NSMenuItem*)sender tag])];
   } else {
-    [self _setWindowMode:_WindowModeStringFromID(_modeControl.selectedSegment)];
+    [self _setWindowMode:_WindowModeStringFromID([(NSSegmentedControl*)sender selectedSegment])];
   }
 }
 
@@ -1798,21 +1808,21 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 - (void)_setSearchFieldPlaceholder:(NSString*)placeholder {
   if (@available(macOS 10.12, *)) {
     // 10.12: there are centering issues, and all are fixed by triggering a layout pass.
-    _searchField.placeholderString = placeholder;
-    _searchField.needsLayout = YES;
+    _searchItem.searchField.placeholderString = placeholder;
+    _searchItem.searchField.needsLayout = YES;
   } else {
     // 10.11 and earlier: search placeholders have the same length to work around incorrect centering.
     placeholder = [placeholder stringByPaddingToLength:18 withString:@" " startingAtIndex:0];
-    _searchField.placeholderString = placeholder;
+    _searchItem.searchField.placeholderString = placeholder;
   }
 }
 
 - (IBAction)performSearch:(id)sender {
-  NSString* query = _searchField.stringValue;
+  NSString* query = _searchItem.searchField.stringValue;
   if (query.length) {
     CFAbsoluteTime time = CFAbsoluteTimeGetCurrent();
     NSArray* results = [_repository findCommitsMatching:query];
-    XLOG_VERBOSE(@"Searched %lu commits in \"%@\" for \"%@\" in %.3f seconds finding %lu matches", _repository.history.allCommits.count, _repository.repositoryPath, self.searchField.stringValue, CFAbsoluteTimeGetCurrent() - time, results.count);
+    XLOG_VERBOSE(@"Searched %lu commits in \"%@\" for \"%@\" in %.3f seconds finding %lu matches", _repository.history.allCommits.count, _repository.repositoryPath, query, CFAbsoluteTimeGetCurrent() - time, results.count);
 
     _searchResultsViewController.results = results;
     if (_searchView.superview == nil) {
@@ -1832,12 +1842,26 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 }
 
 - (IBAction)focusSearch:(id)sender {
-  [_mainWindow makeFirstResponder:_searchField];
+  [_searchItem beginSearchInteraction];
 }
 
 - (IBAction)closeSearch:(id)sender {
-  _searchField.stringValue = @"";
+  _searchItem.searchField.stringValue = @"";
   [self performSearch:nil];
+}
+
+- (IBAction)navigate:(NSSegmentedControl*)sender {
+  switch ((NavigationAction)sender.selectedSegment) {
+    case kNavigationAction_Exit:
+      [self exit:sender];
+      break;
+    case kNavigationAction_Next:
+      [self selectNextCommit:sender];
+      break;
+    case kNavigationAction_Previous:
+      [self selectPreviousCommit:sender];
+      break;
+  }
 }
 
 - (IBAction)exit:(id)sender {
@@ -1861,7 +1885,7 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 }
 
 + (BOOL)repository:(GCRepository*)repository requiresPlainTextAuthenticationForURL:(NSURL*)url user:(NSString*)user username:(NSString**)username password:(NSString**)password {
-  return [[AppDelegate class] loadPlainTextAuthenticationFormKeychainForURL:url user:user username:username password:password allowInteraction:NO];
+  return [KeychainAccessor loadPlainTextAuthenticationFormKeychainForURL:url user:user username:username password:password allowInteraction:NO];
 }
 
 - (IBAction)checkForChanges:(id)sender {
@@ -1937,21 +1961,152 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
 // reset all permissions for particular bundle identifier.
 // $ tccutil reset All co.gitup.mac-debug
 
-- (IBAction)openInTerminal:(id)sender {
-  NSString* script = [NSString stringWithFormat:@"tell application \"Terminal\" to do script \"cd \\\"%@\\\"\"", _repository.workingDirectoryPath];
-  NSDictionary *dictionary = nil;
+- (NSString*)scriptForTerminalAppName:(NSString*)name {
+  if ([name isEqualToString:GIPreferences_TerminalTool_Terminal]) {
+    return [NSString stringWithFormat:
+                         @""
+                          "tell application \"%@\" \n"
+                          ""
+                          ""
+                          "reopen \n"
+                          ""
+                          ""
+                          "activate \n"
+                          ""
+                          ""
+                          "do script \"cd \\\"%@\\\"\" \n"
+                          ""
+                          ""
+                          "end tell \n"
+                          "",
+                         name, _repository.workingDirectoryPath];
+  }
+  /*
+   -- if application is running, we already have a window.
+   -- so, we create new window and write our command.
+   -- otherwise, we reopen application, activate it and
+    if application "iTerm" is running then
+      tell application "iTerm"
+        tell current session of (create window with default profile)
+          set command to "cd '~/GitUp'"
+          write text command
+        end tell
+        activate
+      end tell
+    else
+      tell application "iTerm"
+        reopen
+        activate -- bring to front and also set current window to fresh window
+        tell current session of current window
+          select -- give focus to current window to start typing in it.
+          set command to "cd '~/GitUp'"
+          write text command
+        end tell
+      end tell
+    end if
+   */
+  if ([name isEqualToString:GIPreferences_TerminalTool_iTerm] || [name isEqualToString:GIPreferences_TerminalTool_Terminal]) {
+    NSString* command = [NSString stringWithFormat:@"cd '%@'", _repository.workingDirectoryPath];
+    NSString* isRunningPhase = [NSString stringWithFormat:
+                                             @""
+                                              "tell application \"%@\" \n"
+                                              ""
+                                              ""
+                                              "tell current session of (create window with default profile) \n"
+                                              ""
+                                              ""
+                                              "set command to \"%@\" \n"
+                                              ""
+                                              ""
+                                              "write text command \n"
+                                              ""
+                                              ""
+                                              "end tell \n"
+                                              ""
+                                              ""
+                                              "activate \n"
+                                              ""
+                                              ""
+                                              "end tell \n"
+                                              "",
+                                             name, command];
+    NSString* isNotRunningPhase = [NSString stringWithFormat:
+                                                @""
+                                                 "tell application \"%@\" \n"
+                                                 ""
+                                                 ""
+                                                 "activate \n"
+                                                 ""
+                                                 ""
+                                                 "tell current session of current window \n"
+                                                 ""
+                                                 ""
+                                                 "select \n"
+                                                 ""
+                                                 ""
+                                                 "set command to \"%@\" \n"
+                                                 ""
+                                                 ""
+                                                 "write text command \n"
+                                                 ""
+                                                 ""
+                                                 "end tell \n"
+                                                 ""
+                                                 ""
+                                                 "end tell \n"
+                                                 "",
+                                                name, command];
+    NSString* script = [NSString stringWithFormat:
+                                     @""
+                                      "if application \"%@\" is running then \n"
+                                      ""
+                                      ""
+                                      " %@ \n"
+                                      ""
+                                      ""
+                                      "else \n"
+                                      ""
+                                      ""
+                                      " %@ \n"
+                                      ""
+                                      ""
+                                      "end if \n"
+                                      "",
+                                     name, isRunningPhase, isNotRunningPhase];
+    return script;
+  }
+  return nil;
+}
+
+- (void)openInTerminalAppName:(NSString*)name {
+  NSString* script = [self scriptForTerminalAppName:name];
+
+  if (script == nil) {
+    NSUInteger code = 1000;
+    NSDictionary* userInfo = @{NSLocalizedDescriptionKey : NSLocalizedString(@"Error occured! Unsupported key in user defaults for Preferred terminal app is occured. Key is", nil)};
+    NSError* error = [NSError errorWithDomain:@"org.gitup.preferences.terminal" code:code userInfo:userInfo];
+    [self presentError:error];
+    return;
+  }
+
+  NSDictionary* dictionary = nil;
   [[[NSAppleScript alloc] initWithSource:script] executeAndReturnError:&dictionary];
   if (dictionary != nil) {
-    NSString *message = (NSString *)dictionary[NSAppleScriptErrorMessage] ?: @"Unknown error!";
+    NSString* message = (NSString*)dictionary[NSAppleScriptErrorMessage] ?: @"Unknown error!";
     // show error?
     NSInteger code = [dictionary[NSAppleScriptErrorNumber] integerValue];
-    NSString *key = @"NSAppleEventsUsageDescription";
-    NSString *recovery = [[NSBundle mainBundle] localizedStringForKey:key value:nil table:@"InfoPlist"];
-    NSDictionary *userInfo = @{NSLocalizedDescriptionKey : message, NSLocalizedRecoveryOptionsErrorKey : recovery};
-    NSError *error = [NSError errorWithDomain:@"com.apple.security.automation.appleEvents" code:code userInfo:userInfo];
+    NSString* key = @"NSAppleEventsUsageDescription";
+    NSString* recovery = [[NSBundle mainBundle] localizedStringForKey:key value:nil table:@"InfoPlist"];
+    NSDictionary* userInfo = @{NSLocalizedDescriptionKey : message, NSLocalizedRecoveryOptionsErrorKey : recovery};
+    NSError* error = [NSError errorWithDomain:@"com.apple.security.automation.appleEvents" code:code userInfo:userInfo];
     [self presentError:error];
   }
-  [[NSWorkspace sharedWorkspace] launchApplication:@"Terminal"];
+  //  [[NSWorkspace sharedWorkspace] launchApplication:name];
+}
+
+- (IBAction)openInTerminal:(id)sender {
+  NSString* identifier = [[NSUserDefaults standardUserDefaults] stringForKey:GIPreferences_TerminalTool];
+  [self openInTerminalAppName:identifier];
 }
 
 - (IBAction)dismissHelp:(id)sender {

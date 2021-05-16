@@ -17,6 +17,7 @@
 #import "AppDelegate.h"
 #import "Common.h"
 
+#import <GitUpKit/GitUpKit.h>
 #import <GitUpKit/XLFacilityMacros.h>
 
 @implementation DocumentController
@@ -45,6 +46,12 @@
 
 - (void)addDocument:(NSDocument*)document {
   [super addDocument:document];
+
+  [[AppDelegate sharedDelegate] handleDocumentCountChanged];
+}
+
+- (void)removeDocument:(NSDocument*)document {
+  [super removeDocument:document];
 
   [[AppDelegate sharedDelegate] handleDocumentCountChanged];
 }

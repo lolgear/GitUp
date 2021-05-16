@@ -34,37 +34,8 @@
 #define kP4MergePath @"/Applications/p4merge.app/Contents/Resources/launchp4merge"
 #define kDiffMergePath @"/Applications/DiffMerge.app/Contents/Resources/diffmerge.sh"
 
-NSString* const GIViewControllerTool_FileMerge = @"FileMerge";
-NSString* const GIViewControllerTool_Kaleidoscope = @"Kaleidoscope";
-NSString* const GIViewControllerTool_BeyondCompare = @"Beyond Compare";
-NSString* const GIViewControllerTool_P4Merge = @"P4Merge";
-NSString* const GIViewControllerTool_GitTool = @"Git Tool";
-NSString* const GIViewControllerTool_DiffMerge = @"DiffMerge";
-
-NSString* const GIViewController_DiffTool = @"GIViewController_DiffTool";
-NSString* const GIViewController_MergeTool = @"GIViewController_MergeTool";
-
-static NSString* _diffTemporaryDirectoryPath = nil;
-
 @implementation GIViewController (Utilities)
 
-+ (void)initialize {
-  NSDictionary* defaults = @{
-    GIViewController_DiffTool : GIViewControllerTool_FileMerge,
-    GIViewController_MergeTool : GIViewControllerTool_FileMerge
-  };
-  [[NSUserDefaults standardUserDefaults] registerDefaults:defaults];
-
-  if (_diffTemporaryDirectoryPath == nil) {
-    _diffTemporaryDirectoryPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSBundle mainBundle] bundleIdentifier]];
-    [[NSFileManager defaultManager] removeItemAtPath:_diffTemporaryDirectoryPath error:NULL];
-    if (![[NSFileManager defaultManager] createDirectoryAtPath:_diffTemporaryDirectoryPath withIntermediateDirectories:YES attributes:nil error:NULL]) {
-      XLOG_DEBUG_UNREACHABLE();
-    }
-  }
-}
-
-#pragma mark - Stage
 - (void)discardAllFiles {
   [self confirmUserActionWithAlertType:kGIAlertType_Stop
                                  title:NSLocalizedString(@"Are you sure you want to discard changes in all working directory files?", nil)
@@ -459,7 +430,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
   NSString* uuid = nil;
   NSError* error;
   for (GCDiffDelta* delta in deltas) {
-    NSString* oldPath = [_diffTemporaryDirectoryPath stringByAppendingPathComponent:delta.oldFile.SHA1];
+    NSString* oldPath = [GILaunchServicesLocator.diffTemporaryDirectoryPath stringByAppendingPathComponent:delta.oldFile.SHA1];
     NSString* oldExtension = delta.oldFile.path.pathExtension;
     if (oldExtension.length) {
       oldPath = [oldPath stringByAppendingPathExtension:oldExtension];
@@ -474,7 +445,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
     if ((delta.diff.type == kGCDiffType_WorkingDirectoryWithCommit) || (delta.diff.type == kGCDiffType_WorkingDirectoryWithIndex)) {
       newPath = [self.repository absolutePathForFile:delta.newFile.path];
     } else {
-      newPath = [_diffTemporaryDirectoryPath stringByAppendingPathComponent:delta.newFile.SHA1];
+      newPath = [GILaunchServicesLocator.diffTemporaryDirectoryPath stringByAppendingPathComponent:delta.newFile.SHA1];
       NSString* newExtension = delta.newFile.path.pathExtension;
       if (newExtension.length) {
         newPath = [newPath stringByAppendingPathExtension:newExtension];
@@ -486,21 +457,21 @@ static NSString* _diffTemporaryDirectoryPath = nil;
     }
     NSString* newTitle = delta.newFile.path;
 
-    NSString* identifier = [[NSUserDefaults standardUserDefaults] stringForKey:GIViewController_DiffTool];
-    if ([identifier isEqualToString:GIViewControllerTool_FileMerge]) {
+    NSString* identifier = [[NSUserDefaults standardUserDefaults] stringForKey:GIPreferences_DiffTool];
+    if ([identifier isEqualToString:GIPreferences_DiffMergeTool_FileMerge]) {
       [self _runFileMergeWithArguments:@[ oldPath, newPath ]];
-    } else if ([identifier isEqualToString:GIViewControllerTool_Kaleidoscope]) {
+    } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_Kaleidoscope]) {
       if (uuid == nil) {
         uuid = [[NSUUID UUID] UUIDString];
       }
       [self _runKaleidoscopeWithArguments:@[ @"--partial-changeset", @"--UUID", uuid, @"--no-wait", @"--label", [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleName"], @"--relative-path", delta.canonicalPath, oldPath, newPath ]];
-    } else if ([identifier isEqualToString:GIViewControllerTool_BeyondCompare]) {
+    } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_BeyondCompare]) {
       [self _runBeyondCompareWithArguments:@[ [NSString stringWithFormat:@"-title1=%@", oldTitle], [NSString stringWithFormat:@"-title2=%@", newTitle], oldPath, newPath ]];
-    } else if ([identifier isEqualToString:GIViewControllerTool_P4Merge]) {
+    } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_P4Merge]) {
       [self _runP4MergeWithArguments:@[ @"-nl", oldTitle, @"-nr", newTitle, oldPath, newPath ]];
-    } else if ([identifier isEqualToString:GIViewControllerTool_GitTool]) {
+    } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_GitTool]) {
       [self _runDiffGitToolForFile:delta.canonicalPath withOldPath:oldPath newPath:newPath];
-    } else if ([identifier isEqualToString:GIViewControllerTool_DiffMerge]) {
+    } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_DiffMerge]) {
       [self _runDiffMergeToolWithArguments:@[ [NSString stringWithFormat:@"-t1=%@", oldTitle], [NSString stringWithFormat:@"-t2=%@", newTitle], oldPath, newPath ]];
     } else {
       XLOG_DEBUG_UNREACHABLE();
@@ -512,7 +483,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
 }
 
 - (void)resolveConflictInMergeTool:(GCIndexConflict*)conflict {
-  NSString* basePath = [_diffTemporaryDirectoryPath stringByAppendingPathComponent:[[NSProcessInfo processInfo] globallyUniqueString]];
+  NSString* basePath = [GILaunchServicesLocator.diffTemporaryDirectoryPath stringByAppendingPathComponent:[[NSProcessInfo processInfo] globallyUniqueString]];
   NSString* extension = conflict.path.pathExtension;
   NSError* error;
 
@@ -561,8 +532,8 @@ static NSString* _diffTemporaryDirectoryPath = nil;
   NSString* mergeTitle = conflict.path.lastPathComponent;
 
   NSMutableArray* arguments = [[NSMutableArray alloc] init];
-  NSString* identifier = [[NSUserDefaults standardUserDefaults] stringForKey:GIViewController_MergeTool];
-  if ([identifier isEqualToString:GIViewControllerTool_FileMerge]) {
+  NSString* identifier = [[NSUserDefaults standardUserDefaults] stringForKey:GIPreferences_MergeTool];
+  if ([identifier isEqualToString:GIPreferences_DiffMergeTool_FileMerge]) {
     [arguments addObject:ourPath];
     [arguments addObject:theirPath];
     if (ancestorPath) {
@@ -572,7 +543,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
     [arguments addObject:@"-merge"];
     [arguments addObject:mergePath];
     [self _runFileMergeWithArguments:arguments];
-  } else if ([identifier isEqualToString:GIViewControllerTool_Kaleidoscope]) {
+  } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_Kaleidoscope]) {
     [arguments addObject:@"--merge"];
     [arguments addObject:@"--no-wait"];
     [arguments addObject:@"--output"];
@@ -584,7 +555,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
     [arguments addObject:ourPath];
     [arguments addObject:theirPath];
     [self _runKaleidoscopeWithArguments:arguments];
-  } else if ([identifier isEqualToString:GIViewControllerTool_BeyondCompare]) {
+  } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_BeyondCompare]) {
     [arguments addObject:[NSString stringWithFormat:@"-title1=%@", ourTitle]];
     [arguments addObject:[NSString stringWithFormat:@"-title2=%@", theirTitle]];
     if (ancestorPath) {
@@ -598,7 +569,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
       [arguments addObject:ancestorPath];
     }
     [self _runBeyondCompareWithArguments:arguments];
-  } else if ([identifier isEqualToString:GIViewControllerTool_P4Merge]) {
+  } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_P4Merge]) {
     [arguments addObject:@"-nl"];
     [arguments addObject:ourTitle];
     [arguments addObject:@"-nr"];
@@ -616,9 +587,9 @@ static NSString* _diffTemporaryDirectoryPath = nil;
     [arguments addObject:theirPath];
     [arguments addObject:mergePath];
     [self _runP4MergeWithArguments:arguments];
-  } else if ([identifier isEqualToString:GIViewControllerTool_GitTool]) {
+  } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_GitTool]) {
     [self _runMergeGitToolForFile:mergePath withOldPath:ourPath newPath:theirPath basePath:ancestorPath];
-  } else if ([identifier isEqualToString:GIViewControllerTool_DiffMerge]) {
+  } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_DiffMerge]) {
     [arguments addObject:[NSString stringWithFormat:@"-r=%@", mergePath]];
     [arguments addObject:[NSString stringWithFormat:@"-t1=%@", ourTitle]];
     [arguments addObject:[NSString stringWithFormat:@"-t2=%@", ancestorTitle]];
@@ -813,7 +784,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
 #pragma mark - Diff tool
 // TODO: Use private app directory
 - (void)launchDiffToolWithCommit:(GCCommit*)commit otherCommit:(GCCommit*)otherCommit {
-  NSString* identifier = [[NSUserDefaults standardUserDefaults] stringForKey:GIViewController_DiffTool];
+  NSString* identifier = [[NSUserDefaults standardUserDefaults] stringForKey:GIPreferences_DiffTool];
   NSString* uuid = nil;
   NSError* error;
 
@@ -823,7 +794,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
     return;
   }
 
-  NSString* newPath = [_diffTemporaryDirectoryPath stringByAppendingPathComponent:commit.shortSHA1];
+  NSString* newPath = [GILaunchServicesLocator.diffTemporaryDirectoryPath stringByAppendingPathComponent:commit.shortSHA1];
   [[NSFileManager defaultManager] removeItemAtPath:newPath error:&error];
   if (![[NSFileManager defaultManager] createDirectoryAtPath:newPath withIntermediateDirectories:NO attributes:nil error:&error]) {
     [self presentError:error];
@@ -831,7 +802,7 @@ static NSString* _diffTemporaryDirectoryPath = nil;
   }
   NSString* oldTitle = commit.shortSHA1;
 
-  NSString* oldPath = [_diffTemporaryDirectoryPath stringByAppendingPathComponent:otherCommit.shortSHA1];
+  NSString* oldPath = [GILaunchServicesLocator.diffTemporaryDirectoryPath stringByAppendingPathComponent:otherCommit.shortSHA1];
   [[NSFileManager defaultManager] removeItemAtPath:oldPath error:&error];
   if (![[NSFileManager defaultManager] createDirectoryAtPath:oldPath withIntermediateDirectories:NO attributes:nil error:&error]) {
     [self presentError:error];
@@ -868,17 +839,17 @@ static NSString* _diffTemporaryDirectoryPath = nil;
           return;
         }
 
-        if ([identifier isEqualToString:GIViewControllerTool_Kaleidoscope]) {
+        if ([identifier isEqualToString:GIPreferences_DiffMergeTool_Kaleidoscope]) {
           if (uuid == nil) {
             uuid = [[NSUUID UUID] UUIDString];
           }
           [self _runKaleidoscopeWithArguments:@[ @"--partial-changeset", @"--UUID", uuid, @"--no-wait", @"--label", [NSString stringWithFormat:@"%@ ▶ %@", oldTitle, newTitle], @"--relative-path", delta.canonicalPath, oldPath2, newPath2 ]];
-        } else if ([identifier isEqualToString:GIViewControllerTool_P4Merge]) {
+        } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_P4Merge]) {
           NSString* oldTitle2 = [NSString stringWithFormat:@"[%@] %@", oldTitle, delta.oldFile.path];
           NSString* newTitle2 = [NSString stringWithFormat:@"[%@] %@", newTitle, delta.newFile.path];
           [self _runP4MergeWithArguments:@[ @"-nl", oldTitle2, @"-nr", newTitle2, oldPath2, newPath2 ]];
           usleep(250 * 1000);  // TODO: Calling launchp4merge too frequently drops diffs
-        } else if ([identifier isEqualToString:GIViewControllerTool_GitTool]) {
+        } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_GitTool]) {
           [self _runDiffGitToolForFile:delta.canonicalPath withOldPath:oldPath2 newPath:newPath2];
         }
         break;
@@ -890,17 +861,17 @@ static NSString* _diffTemporaryDirectoryPath = nil;
     }
   }
 
-  if ([identifier isEqualToString:GIViewControllerTool_FileMerge]) {
+  if ([identifier isEqualToString:GIPreferences_DiffMergeTool_FileMerge]) {
     [self _runFileMergeWithArguments:@[ oldPath, newPath ]];
-  } else if ([identifier isEqualToString:GIViewControllerTool_Kaleidoscope]) {
+  } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_Kaleidoscope]) {
     if (uuid) {
       [self _runKaleidoscopeWithArguments:@[ @"--mark-changeset-as-closed", uuid ]];
     }
-  } else if ([identifier isEqualToString:GIViewControllerTool_BeyondCompare]) {
+  } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_BeyondCompare]) {
     [self _runBeyondCompareWithArguments:@[ [NSString stringWithFormat:@"-title1=%@", oldTitle], [NSString stringWithFormat:@"-title2=%@", newTitle], oldPath, newPath ]];
-  } else if ([identifier isEqualToString:GIViewControllerTool_P4Merge] || [identifier isEqualToString:GIViewControllerTool_GitTool]) {
-    ;  // Handled above
-  } else if ([identifier isEqualToString:GIViewControllerTool_DiffMerge]) {
+  } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_P4Merge] || [identifier isEqualToString:GIPreferences_DiffMergeTool_GitTool]) {
+    // Handled above
+  } else if ([identifier isEqualToString:GIPreferences_DiffMergeTool_DiffMerge]) {
     [self _runDiffMergeToolWithArguments:@[ [NSString stringWithFormat:@"-t1=%@", oldTitle], [NSString stringWithFormat:@"-t2=%@", newTitle], oldPath, newPath ]];
   } else {
     XLOG_DEBUG_UNREACHABLE();
