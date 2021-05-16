@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A721EB7243B2A3D0035A3E4 /* NSView+Embedding.h in Headers */ = {isa = PBXBuildFile; fileRef = 0A721EB5243B2A3D0035A3E4 /* NSView+Embedding.h */; };
+		0A721EB8243B2A3D0035A3E4 /* NSView+Embedding.m in Sources */ = {isa = PBXBuildFile; fileRef = 0A721EB6243B2A3D0035A3E4 /* NSView+Embedding.m */; };
+		0AC8525923A122C400479160 /* GILaunchServicesLocator.h in Headers */ = {isa = PBXBuildFile; fileRef = 0AC8525723A122C400479160 /* GILaunchServicesLocator.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		0AC8525A23A122C400479160 /* GILaunchServicesLocator.m in Sources */ = {isa = PBXBuildFile; fileRef = 0AC8525823A122C400479160 /* GILaunchServicesLocator.m */; };
 		743BF1841B871C0200E1CA49 /* GCOrderedSet.h in Headers */ = {isa = PBXBuildFile; fileRef = 74EDB5D01B84D4C400F00E79 /* GCOrderedSet.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		749335CA1B9B7FF200225513 /* GCOrderedSet.m in Sources */ = {isa = PBXBuildFile; fileRef = 74EDB5D11B84D4C400F00E79 /* GCOrderedSet.m */; };
 		749786941B85AAB10065BD55 /* GCOrderedSet.m in Sources */ = {isa = PBXBuildFile; fileRef = 74EDB5D11B84D4C400F00E79 /* GCOrderedSet.m */; };
@@ -423,6 +427,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0A721EB5243B2A3D0035A3E4 /* NSView+Embedding.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSView+Embedding.h"; sourceTree = "<group>"; };
+		0A721EB6243B2A3D0035A3E4 /* NSView+Embedding.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSView+Embedding.m"; sourceTree = "<group>"; };
+		0AC8525723A122C400479160 /* GILaunchServicesLocator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GILaunchServicesLocator.h; sourceTree = "<group>"; };
+		0AC8525823A122C400479160 /* GILaunchServicesLocator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GILaunchServicesLocator.m; sourceTree = "<group>"; };
 		74EDB5D01B84D4C400F00E79 /* GCOrderedSet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCOrderedSet.h; sourceTree = "<group>"; };
 		74EDB5D11B84D4C400F00E79 /* GCOrderedSet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCOrderedSet.m; sourceTree = "<group>"; };
 		74EDB5D51B84E06500F00E79 /* GCOrderedSet-Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "GCOrderedSet-Tests.m"; sourceTree = "<group>"; };
@@ -869,6 +877,8 @@
 				E259C2D61A64FAEA0079616B /* GCRepository+Utilities-Tests.m */,
 				E218A58C1A56706600DFF1DF /* GCRepository+Utilities.h */,
 				E218A58D1A56706600DFF1DF /* GCRepository+Utilities.m */,
+				0A721EB5243B2A3D0035A3E4 /* NSView+Embedding.h */,
+				0A721EB6243B2A3D0035A3E4 /* NSView+Embedding.m */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -1196,6 +1206,7 @@
 				E267E2CE1B84F29F00BAB377 /* XLFacilityCMacros.h in Headers */,
 				E267E2CF1B84F29F00BAB377 /* XLFacilityMacros.h in Headers */,
 				E267E2D01B84F29F00BAB377 /* XLFileLogger.h in Headers */,
+				0A721EB7243B2A3D0035A3E4 /* NSView+Embedding.h in Headers */,
 				E267E2D11B84F29F00BAB377 /* XLFunctions.h in Headers */,
 				E267E2D21B84F29F00BAB377 /* XLLogger.h in Headers */,
 				E267E2D31B84F29F00BAB377 /* XLLogRecord.h in Headers */,
@@ -1279,6 +1290,7 @@
 					E267E1A71B84D6C500BAB377 = {
 						CreatedOnToolsVersion = 7.0;
 						DevelopmentTeam = 88W3E55T4B;
+						LastSwiftMigration = 1140;
 					};
 					E2C338C319F8562F00063D95 = {
 						CreatedOnToolsVersion = 6.1;
@@ -1503,6 +1515,7 @@
 				E267E22C1B84DBF800BAB377 /* GIModalView.m in Sources */,
 				E267E22D1B84DBF800BAB377 /* GIViewController.m in Sources */,
 				E267E22E1B84DBF800BAB377 /* GIViewController+Utilities.m in Sources */,
+				0A721EB8243B2A3D0035A3E4 /* NSView+Embedding.m in Sources */,
 				E267E22F1B84DBF800BAB377 /* GIWindowController.m in Sources */,
 				E267E2311B84DC2600BAB377 /* GICommitListViewController.m in Sources */,
 				E267E2321B84DC2600BAB377 /* GIDiffContentsViewController.m in Sources */,
@@ -1806,6 +1819,7 @@
 		E267E1B11B84D6C500BAB377 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1816,12 +1830,15 @@
 				PRODUCT_NAME = GitUpKit;
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
 		E267E1B21B84D6C500BAB377 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				DEFINES_MODULE = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1832,6 +1849,7 @@
 				PRODUCT_NAME = GitUpKit;
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
