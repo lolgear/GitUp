@@ -11,6 +11,10 @@
 		0A721EB8243B2A3D0035A3E4 /* NSView+Embedding.m in Sources */ = {isa = PBXBuildFile; fileRef = 0A721EB6243B2A3D0035A3E4 /* NSView+Embedding.m */; };
 		0AC8525923A122C400479160 /* GILaunchServicesLocator.h in Headers */ = {isa = PBXBuildFile; fileRef = 0AC8525723A122C400479160 /* GILaunchServicesLocator.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		0AC8525A23A122C400479160 /* GILaunchServicesLocator.m in Sources */ = {isa = PBXBuildFile; fileRef = 0AC8525823A122C400479160 /* GILaunchServicesLocator.m */; };
+		0AD511EE24FD355400547A8D /* GIQuickViewControllerWithCommitsList.h in Headers */ = {isa = PBXBuildFile; fileRef = 0AD511EC24FD355400547A8D /* GIQuickViewControllerWithCommitsList.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		0AD511EF24FD355400547A8D /* GIQuickViewControllerWithCommitsList.m in Sources */ = {isa = PBXBuildFile; fileRef = 0AD511ED24FD355400547A8D /* GIQuickViewControllerWithCommitsList.m */; };
+		1DF371CD22F5262300EF7BD9 /* GCLiveRepository+Utilities.h in Headers */ = {isa = PBXBuildFile; fileRef = 1DF371CB22F5262300EF7BD9 /* GCLiveRepository+Utilities.h */; };
+		1DF371CE22F5262300EF7BD9 /* GCLiveRepository+Utilities.m in Sources */ = {isa = PBXBuildFile; fileRef = 1DF371CC22F5262300EF7BD9 /* GCLiveRepository+Utilities.m */; };
 		743BF1841B871C0200E1CA49 /* GCOrderedSet.h in Headers */ = {isa = PBXBuildFile; fileRef = 74EDB5D01B84D4C400F00E79 /* GCOrderedSet.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		749335CA1B9B7FF200225513 /* GCOrderedSet.m in Sources */ = {isa = PBXBuildFile; fileRef = 74EDB5D11B84D4C400F00E79 /* GCOrderedSet.m */; };
 		749786941B85AAB10065BD55 /* GCOrderedSet.m in Sources */ = {isa = PBXBuildFile; fileRef = 74EDB5D11B84D4C400F00E79 /* GCOrderedSet.m */; };
@@ -431,6 +435,10 @@
 		0A721EB6243B2A3D0035A3E4 /* NSView+Embedding.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSView+Embedding.m"; sourceTree = "<group>"; };
 		0AC8525723A122C400479160 /* GILaunchServicesLocator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GILaunchServicesLocator.h; sourceTree = "<group>"; };
 		0AC8525823A122C400479160 /* GILaunchServicesLocator.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GILaunchServicesLocator.m; sourceTree = "<group>"; };
+		0AD511EC24FD355400547A8D /* GIQuickViewControllerWithCommitsList.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GIQuickViewControllerWithCommitsList.h; sourceTree = "<group>"; };
+		0AD511ED24FD355400547A8D /* GIQuickViewControllerWithCommitsList.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GIQuickViewControllerWithCommitsList.m; sourceTree = "<group>"; };
+		1DF371CB22F5262300EF7BD9 /* GCLiveRepository+Utilities.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "GCLiveRepository+Utilities.h"; sourceTree = "<group>"; };
+		1DF371CC22F5262300EF7BD9 /* GCLiveRepository+Utilities.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "GCLiveRepository+Utilities.m"; sourceTree = "<group>"; };
 		74EDB5D01B84D4C400F00E79 /* GCOrderedSet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCOrderedSet.h; sourceTree = "<group>"; };
 		74EDB5D11B84D4C400F00E79 /* GCOrderedSet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCOrderedSet.m; sourceTree = "<group>"; };
 		74EDB5D51B84E06500F00E79 /* GCOrderedSet-Tests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "GCOrderedSet-Tests.m"; sourceTree = "<group>"; };
@@ -820,6 +828,8 @@
 				E22942031AC11F56000A83AF /* GIQuickViewController.h */,
 				E22942041AC11F56000A83AF /* GIQuickViewController.m */,
 				E22941F11AC11F56000A83AF /* GIQuickViewController.xib */,
+				0AD511EC24FD355400547A8D /* GIQuickViewControllerWithCommitsList.h */,
+				0AD511ED24FD355400547A8D /* GIQuickViewControllerWithCommitsList.m */,
 				E22942051AC11F56000A83AF /* GISimpleCommitViewController.h */,
 				E22942061AC11F56000A83AF /* GISimpleCommitViewController.m */,
 				E22941F31AC11F56000A83AF /* GISimpleCommitViewController.xib */,
@@ -1139,6 +1149,7 @@
 				E267E1BD1B84D80500BAB377 /* GCCore.h in Headers */,
 				E267E1BE1B84D80500BAB377 /* GCDiff.h in Headers */,
 				E267E2A61B84F02A00BAB377 /* GCError.h in Headers */,
+				0AD511EE24FD355400547A8D /* GIQuickViewControllerWithCommitsList.h in Headers */,
 				E267E1BF1B84D80500BAB377 /* GCFoundation.h in Headers */,
 				E267E1C01B84D80500BAB377 /* GCFunctions.h in Headers */,
 				E267E1C11B84D80500BAB377 /* GCHistory.h in Headers */,
@@ -1510,6 +1521,7 @@
 				E267E21F1B84DB6E00BAB377 /* GIUnifiedDiffView.m in Sources */,
 				E267E2291B84DBF800BAB377 /* GIAppKit.m in Sources */,
 				E267E22A1B84DBF800BAB377 /* GIColorView.m in Sources */,
+				0AD511EF24FD355400547A8D /* GIQuickViewControllerWithCommitsList.m in Sources */,
 				E267E22B1B84DBF800BAB377 /* GILinkButton.m in Sources */,
 				DBDFBC1122B61135003EEC6C /* NSBundle+GitUpKit.m in Sources */,
 				E267E22C1B84DBF800BAB377 /* GIModalView.m in Sources */,
