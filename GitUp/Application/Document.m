@@ -62,7 +62,7 @@ typedef NS_ENUM(NSInteger, NavigationAction) {
   kNavigationAction_Previous
 };
 
-@interface Document () <NSToolbarDelegate, NSTextFieldDelegate, GCLiveRepositoryDelegate, GIWindowControllerDelegate, GIMapViewControllerDelegate, GISnapshotListViewControllerDelegate, GIUnifiedReflogViewControllerDelegate, GICommitListViewControllerDelegate, GICommitRewriterViewControllerDelegate, GICommitSplitterViewControllerDelegate, GIConflictResolverViewControllerDelegate>
+@interface Document () <NSToolbarDelegate, NSTextFieldDelegate, GCLiveRepositoryDelegate, GIWindowControllerDelegate, GIMapViewControllerDelegate, GISnapshotListViewControllerDelegate, GIUnifiedReflogViewControllerDelegate, GICommitListViewControllerDelegate, GICommitRewriterViewControllerDelegate, GICommitSplitterViewControllerDelegate, GIConflictResolverViewControllerDelegate, GIQuickViewControllerDelegate>
 @property(nonatomic, strong) AuthenticationWindowController* authenticationWindowController;
 @property(nonatomic) IBOutlet GICustomToolbarItem* navigateItem;
 @property(nonatomic) IBOutlet GICustomToolbarItem* titleItem;
