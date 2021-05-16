@@ -11,7 +11,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface QuickViewModel : NSObject
-- (instancetype)configuredWithRepository:(GCLiveRepository *)repository;
+- (instancetype)initWithRepository:(GCLiveRepository *)repository;
 
 // Checking
 @property (assign, nonatomic, readonly) BOOL hasPrevious;

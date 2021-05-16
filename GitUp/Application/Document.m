@@ -51,7 +51,8 @@
 
 #define kMaxProgressRefreshRate 10.0  // Hz
 
-@interface Document () <NSToolbarDelegate, NSTextFieldDelegate, GCLiveRepositoryDelegate, GIWindowControllerDelegate, GIMapViewControllerDelegate, GISnapshotListViewControllerDelegate, GIUnifiedReflogViewControllerDelegate, GIQuickViewController__Delegate__Intentions, GICommitListViewControllerDelegate, GICommitRewriterViewControllerDelegate, GICommitSplitterViewControllerDelegate, GIConflictResolverViewControllerDelegate>
+@interface Document () <NSToolbarDelegate, NSTextFieldDelegate, GCLiveRepositoryDelegate, GIWindowControllerDelegate, GIMapViewControllerDelegate, GISnapshotListViewControllerDelegate, GIUnifiedReflogViewControllerDelegate, GIQuickViewControllerDelegate, GICommitListViewControllerDelegate, GICommitRewriterViewControllerDelegate, GICommitSplitterViewControllerDelegate, GIConflictResolverViewControllerDelegate>
+@property (nonatomic, strong) AuthenticationWindowController *authenticationWindowController;
 @end
 
 static NSDictionary* _helpPlist = nil;
@@ -325,7 +326,7 @@ static void _CheckTimerCallBack(CFRunLoopTimerRef timer, void* info) {
   _searchResultsViewController.emptyLabel = NSLocalizedString(@"No Results", nil);
   [_searchControllerView replaceWithView:_searchResultsViewController.view];
 
-  _quickViewModel = [[QuickViewModel new] configuredWithRepository:_repository];
+  _quickViewModel = [[QuickViewModel alloc] initWithRepository:_repository];
   _quickViewController = [[GIQuickViewControllerWithCommitsList alloc] initWithRepository:_repository];
   _quickViewController.delegate = self;
   NSTabViewItem* quickItem = [_mainTabView tabViewItemAtIndex:[_mainTabView indexOfTabViewItemWithIdentifier:kWindowModeString_Map_QuickView]];
@@ -1438,26 +1439,9 @@ static NSString* _StringFromRepositoryState(GCRepositoryState state) {
   [self toggleReflog:nil];
 }
 
-//#import "GICommitListViewController.h"
-#pragma mark - GIQuickViewController__Delegate__Intentions
+#pragma mark - GIQuickViewControllerDelegate
 - (void)quickViewWantsToShowSelectedCommitsList:(NSArray <GCHistoryCommit *> *)commitsList {
   [self _enterQuickViewWithHistoryCommit:commitsList.firstObject commitList:commitsList];
-//  static GICommitListViewController *theViewController = nil;
-//  if (theViewController != nil) {
-//    [_windowController.contentViewController dismissViewController:theViewController];
-//  }
-//  GICommitListViewController *viewController = [[GICommitListViewController alloc] init];
-//  viewController.results = commitsList;
-//  viewController.selectedCommit = commitsList.firstObject;
-//  theViewController = viewController;
-//  _searchResultsViewController.results = commitsList;
-//  _searchResultsViewController.selectedResult = commitsList.firstObject;
-//
-//  if (_searchView.superview == nil) {
-//    [self _addSideView:_searchView withIdentifier:kSideViewIdentifier_Search completion:NULL];
-//  }
-//  [_mainWindow makeFirstResponder:theViewController.preferredFirstResponder];
-//  [_windowController.contentViewController presentViewControllerAsSheet:theViewController];
 }
 
 - (void)quickViewDidSelectCommit:(GCHistoryCommit *)commit commitsList:(NSArray<GCHistoryCommit *> *)commitsList {

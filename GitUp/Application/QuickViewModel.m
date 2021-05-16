@@ -25,6 +25,15 @@
 @end
 
 @implementation QuickViewModel
+
+#pragma mark - Initialization
+- (instancetype)initWithRepository:(GCLiveRepository *)repository {
+  if ((self = [super init])) {
+    self.repository = repository;
+  }
+  return self;
+}
+
 #pragma mark - Loading
 - (void)loadMoreAncestors {
   if (![_ancestors iterateWithCommitBlock:^(GCHistoryCommit* commit, BOOL* stop) {
@@ -139,9 +148,4 @@
   return self.currentCommit;
 }
 
-#pragma mark - Configurations
-- (instancetype)configuredWithRepository:(GCLiveRepository *)repository {
-  _repository = repository;
-  return self;
-}
 @end
